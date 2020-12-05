@@ -1,0 +1,5 @@
+scikit-image
+sklearn
+h5py
+pandas
+scikit-fmm
