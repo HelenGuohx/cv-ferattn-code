@@ -151,13 +151,6 @@ def main(params=None):
     # datasets
     # training dataset
     # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
-    data = FactoryDataset.factory(
-        pathname=args.data,
-        name=args.name_dataset,
-        subset=FactoryDataset.training,
-        idenselect=idenselect,
-        download=True)
-
     train_data = SecuencialSyntheticFaceDataset(
         data=FactoryDataset.factory(
             pathname=args.data,
@@ -229,10 +222,10 @@ if __name__ == '__main__':
     DATA = '~/.datasets'
     NAMEDATASET = 'ck'
     PROJECT = '../out/attnet'
-    EPOCHS = 500
-    TRAINITERATION = 288000
-    TESTITERATION = 2880
-    BATCHSIZE = 32  # 32, 64, 128, 160, 200, 240
+    EPOCHS = 5
+    TRAINITERATION = 288
+    TESTITERATION = 20
+    BATCHSIZE = 128  # 32, 64, 128, 160, 200, 240
     LEARNING_RATE = 0.0001
     MOMENTUM = 0.5
     PRINT_FREQ = 100
@@ -244,7 +237,7 @@ if __name__ == '__main__':
     LOSS = 'attloss'
     OPT = 'adam'
     SCHEDULER = 'fixed'
-    NUMCLASS = 8  # 6, 7, 8
+    NUMCLASS = 7  # 6, 7, 8
     NUMCHANNELS = 3
     DIM = 32
     SNAPSHOT = 10

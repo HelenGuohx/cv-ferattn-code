@@ -94,10 +94,10 @@ class Logger(object):
             if not bplotter: 
                 continue 
 
-            if bavg: self.plotter.plot(t, '{}_{} (avg)'.format(self.title_name,k), iterepoch, v.avg)
-            else: self.plotter.plot(t, '{}_{} (avg)'.format(self.title_name,k), iterepoch, v.favg)
-
-            self.plotter.plot(t, '{}_{} (val)'.format(self.title_name,k), iterepoch, v.val)
+            # if bavg: self.plotter.plot(t, '{}_{} (avg)'.format(self.title_name,k), iterepoch, v.avg)
+            # else: self.plotter.plot(t, '{}_{} (avg)'.format(self.title_name,k), iterepoch, v.favg)
+            #
+            # self.plotter.plot(t, '{}_{} (val)'.format(self.title_name,k), iterepoch, v.val)
 
         print(strinfo, flush=True )
         if bsummary: 

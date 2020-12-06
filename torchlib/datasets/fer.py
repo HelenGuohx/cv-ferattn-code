@@ -89,10 +89,107 @@ def adjust( image, plm  ):
     return image_rot, plm_rot
 
 
+def split_train_valid(path, filename, train_size):
+    data_dir = os.path.join(path, filename + '.h5')
+    f = h5py.File(data_dir, 'r')
+    data = np.array(f["data"])
+    labels = np.array(f["iclass"])
+    iactor = np.array(f["iactor"]).astype(int)
+    numclass = np.array(f["num"]).item()
+
+    actors = np.unique(iactor)
+    np.random.seed(42)
+    actors = np.random.permutation(actors)
+    train_size = int(len(actors) * train_size) if isinstance(train_size, float) else train_size
+    train_actors = actors[:train_size]
+
+    train_index = np.zeros(len(labels))
+    for i in train_actors:
+        train_index[iactor == i] = 1
+    test_index = 1 - train_index
+
+    print(f"train size: {train_size}, test size: {len(labels) - train_size}")
+
+    print("Save training data into ", os.path.join(path, filename + '_train.h5'))
+    with h5py.File(os.path.join(path, filename + '_train.h5'), 'w') as f:
+        f.create_dataset('data', data=data[train_index == 1])
+        f.create_dataset('iclass', data=labels[train_index == 1])
+        f.create_dataset('num', data=numclass)
+
+    print("Save test data into ", os.path.join(path, filename + '_test.h5'))
+    with h5py.File(os.path.join(path, filename + '_test.h5'), 'w') as f:
+        f.create_dataset('data', data=data[test_index == 1])
+        f.create_dataset('iclass', data=labels[test_index == 1])
+        f.create_dataset('num', data=numclass)
+
+class FERClassicDataset(dataProvide):
+    """
+    FER CLASSIC dataset
+        CK, JAFFE, BU
+    Args:
+        path
+        filename
+        idenselect
+        transform (callable, optional): Optional transform to be applied on a sample.
+    """
+
+    # classes = ['Neutral - NE', 'Happiness - HA', 'Surprise - SU', 'Sadness - SA', 'Anger - AN', 'Disgust - DI',
+    #            'Fear - FR', 'Contempt - CO']
+    classes = ['NE', 'AN', 'CO', 'DI', 'FR', 'HA', 'SA', 'SU']
+    class_to_idx = {_class: i for i, _class in enumerate(classes)}
+
+    def __init__(self,
+                 path,
+                 filename,
+                 idenselect=[],
+                 train=True,
+                 transform=None,
+                 ):
+
+        if train:
+            filename += '_train.h5'
+        else:
+            filename += '_test.h5'
+
+        f = h5py.File(os.path.join(path, filename), 'r')
+        data = np.array(f["data"])
+        labels = np.array(f["iclass"])
+        numclass = np.array(f["num"]).item()
+
+        self.data = data
+        self.labels = labels
+        self.transform = transform
+        self.numclass = numclass
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, i):
+        image = self.data[i]
+        label = self.labels[i]
+        return image, label
+
+    # def iden(self, i):
+    #     return self.iactor[i]
+    #
+    # def getladmarks(self):
+    #     i = self.index
+    #     # return np.squeeze( self.points[i,...] ).transpose(1,0) * [self.width / self.imsize[0], self.height / self.imsize[1]]
+    #     return np.squeeze(self.points[i, ...]).transpose(1, 0)
+    #
+    # def getroi(self):
+    #
+    #     # pts = self.getladmarks()
+    #     # minx = np.min(pts[:,0]); maxx = np.max(pts[:,0]);
+    #     # miny = np.min(pts[:,1]); maxy = np.max(pts[:,1]);
+    #     # box = [minx,miny,maxx,maxy]
+    #
+    #     box = [0, 0, 48, 48]
+    #     face_rc = Rect(box)
+    #     return face_rc
 
 
-
-class FERClassicDataset( dataProvide ):
+class FERClassicDataset0( dataProvide ):
     """
     FER CLASSIC dataset
         CK, JAFFE, BU        
@@ -124,12 +221,12 @@ class FERClassicDataset( dataProvide ):
         f = h5py.File(dir)
 
         self.data   = np.array(f["data"])
-        self.points = np.array(f["points"])
+        self.points = np.array(f["points"]) #?? empty
         self.imsize = np.array(f["imsize"])[:,0].astype(int)
-        self.iactor = np.array(f["iactor"])[0,:].astype(int) 
+        self.iactor = np.array(f["iactor"])[0,:].astype(int) #??
         self.labels = np.array(f["iclass"])[0,:].astype(int) - 1
         self.name   = np.array(f["name"])
-        self.num    = np.array(f["num"])[0,0].astype(int)
+        self.num    = np.array(f["num"])[0,0].astype(int) #?? empty
         
         # Emotions class 
         if filename == 'ck' or filename == 'ckp':       
