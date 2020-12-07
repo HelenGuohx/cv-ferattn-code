@@ -173,6 +173,8 @@ class FactoryDataset(object):
         elif name == 'ck':
             btrain=(subset=='train') 
             pathname = create_folder(pathname, name)
+            if btrain:
+                fer.split_train_valid(pathname, 'ck', 10)
             data = fer.FERClassicDataset(pathname, 'ck', idenselect=idenselect, train=btrain )
 
         elif name == 'ckp':

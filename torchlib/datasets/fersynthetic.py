@@ -193,8 +193,8 @@ class SecuencialSyntheticFaceDataset( data.Dataset ):
         # read image         
         idx = idx % self.num_classes        
         class_index = self.labels_index[ idx ]
-        n =  len( class_index )        
-        idx = class_index[ random.randint(0,n-1) ]  
+        n =  len( class_index )
+        idx = class_index[ random.randint(0,n-1) ]
         image, label = self.data[ idx ]  
         
         #image, label = self.data[ (idx)%len(self.data)  ]        

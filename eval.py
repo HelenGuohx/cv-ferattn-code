@@ -11,7 +11,7 @@ from tqdm import tqdm
 import torch
 import torch.nn.functional as TF
 import torch.backends.cudnn as cudnn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torchvision import transforms, utils
 
 from pytvision.transforms.aumentation import  ObjectImageMetadataTransform
@@ -19,7 +19,6 @@ from pytvision.transforms import transforms as mtrans
 
 #sys.path.append('../')
 from torchlib.transforms import functional as F
-from torchlib.datasets.fersynthetic  import SyntheticFaceDataset
 from torchlib.datasets.factory  import FactoryDataset
 from torchlib.datasets.datasets import Dataset
 from torchlib.datasets.fersynthetic  import SyntheticFaceDataset
@@ -53,10 +52,13 @@ def arg_parser():
     return parser
 
 
-def main():
+def main(params=None):
     
-    parser = arg_parser();
-    args = parser.parse_args();
+    parser = arg_parser()
+    if params:
+        args = parser.parse_args(params)
+    else:
+        args = parser.parse_args()
 
     # Configuration
     project         = args.project
@@ -64,9 +66,7 @@ def main():
     pathnamedataset = args.pathdataset  
     pathnamemodel   = args.model
     pathproject     = os.path.join( project, projectname )
-    pathnameout     = args.pathnameout
-    filename        = args.filename
-    namedataset     = args.namedataset 
+    namedataset     = args.namedataset
     
     no_cuda=False
     parallel=False
@@ -74,7 +74,7 @@ def main():
     seed=1
     brepresentation=True
     bclassification_test=True
-    brecover_test=True
+    brecover_test=False
     
     imagesize=64
     idenselect=np.arange(10)
@@ -105,6 +105,7 @@ def main():
         cudnn.benchmark = True
 
         # load model
+        os.path.isfile(pathnamemodel)
         if network.load( pathnamemodel ) is not True:
             print('>>Error!!! load model')
             assert(False)  
@@ -156,15 +157,15 @@ def main():
 
             dataloader = DataLoader(dataset, batch_size=100, shuffle=False, num_workers=10 )
             
-            print(breal)
-            print(subset)
-            print(dataloader.dataset.data.classes)
-            print(len(dataset))
-            print(len(dataloader))
-            
+            print("\nIs real dataset:", breal)
+            print("Subset:", subset)
+            print("Classes", dataloader.dataset.data.classes)
+            print("size of data:", len(dataset))
+            print("num of batches", len(dataloader))
+
             # representation 
             Y_labs, Y_lab_hats, Zs = network.representation( dataloader, breal )            
-            print(Y_lab_hats.shape, Zs.shape, Y_labs.shape)
+            print("Y_lab_hats shape: {0}, Zs shape: {1}, y_labs shape: {2}".format(Y_lab_hats.shape, Zs.shape, Y_labs.shape))
             
             reppathname = os.path.join( pathproject, 'rep_{}_{}_{}_{}.pth'.format(projectname, namedataset, subset, 'real' if breal else 'no_real' ) )
             torch.save( { 'Yh':Y_lab_hats, 'Z':Zs, 'Y':Y_labs }, reppathname )
@@ -220,7 +221,7 @@ def main():
 
         # save
         df = pd.DataFrame(tuplas)
-        df.to_csv( os.path.join( pathnameout, 'experiments_cls.csv' ) , index=False, encoding='utf-8')
+        df.to_csv( os.path.join( pathproject, 'experiments_cls.csv' ) , index=False, encoding='utf-8')
         print('save experiments class ...')
         print()
     
@@ -295,7 +296,7 @@ def main():
 
         # save
         df = pd.DataFrame(tuplas)
-        df.to_csv( os.path.join( pathnameout, 'experiments_recovery.csv' ) , index=False, encoding='utf-8')
+        df.to_csv( os.path.join( pathproject, 'experiments_recovery.csv' ) , index=False, encoding='utf-8')
         print('save experiments recovery ...')
         print()
     
@@ -304,4 +305,23 @@ def main():
         
 
 if __name__ == '__main__':
-    main()
+    PATHDATASET = '~/.datasets/'
+    NAMEDATASET = 'ck'  # bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
+    PROJECT = '../out/attnet'
+    # PATHNAMEOUT = '../out/attnet'
+    FILENAME = 'result.txt'
+    PATHMODEL = 'models'
+    NAMEMODEL = 'model_best.pth.tar'  # 'model_best.pth.tar' #'chk000565.pth.tar'
+
+    EXP_NAME = 'feratt_attnet_ferattention_attloss_adam_ck_dim32_bbpreactresnet_fold0_000'
+    MODEL = f'{PROJECT}/{EXP_NAME}/{PATHMODEL}/{NAMEMODEL}'
+
+   # / out / attnet / feratt_attnet_ferattention_attloss_adam_ck_dim32_bbpreactresnet_fold0_000 / models/model_best.pth.tar
+    args = f"--project={PROJECT} \
+--projectname={EXP_NAME} \
+--pathdataset={PATHDATASET} \
+--namedataset={NAMEDATASET} \
+--filename={FILENAME} \
+--model={MODEL}".split()
+
+    main(params=args)
