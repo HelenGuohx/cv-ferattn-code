@@ -40,7 +40,7 @@ class ObjectRegressionTransform( ObjectTransform ):
         self.y = y
 
     def size(self):
-        return x.shape[0]
+        return self.x.shape[0]
 
     #pytorch transform
     def to_tensor(self):

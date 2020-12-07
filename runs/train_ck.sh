@@ -5,11 +5,11 @@ DATABACK='~/.datasets/coco'
 DATA='~/.datasets'
 NAMEDATASET='ck'
 PROJECT='../out/attnet'
-EPOCHS=5
+EPOCHS=60
 TRAINITERATION=288
 TESTITERATION=28
 BATCHSIZE=200 #32, 64, 128, 160, 200, 240
-LEARNING_RATE=0.001
+LEARNING_RATE=0.0001
 MOMENTUM=0.5
 PRINT_FREQ=100
 WORKERS=4
@@ -66,6 +66,7 @@ $DATA \
 --name-method=$NAMEMETHOD \
 --arch=$ARCH \
 --finetuning \
+--breal \
 2>&1 | tee -a $PROJECT/$EXP_NAME/$EXP_NAME.log \
 
 #--parallel \

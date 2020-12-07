@@ -10,7 +10,7 @@ class Attloss(nn.Module):
         super(Attloss, self).__init__()
         self.maxvalueloss = 30
 
-    def forward(self, x_org, y_mask, att):
+    def forward(self, x_org, att, y_mask=None):
         d = torch.exp( 6.0*torch.abs( x_org - att ) )
         loss_att = (d-1)/(d+1)
         loss_att = ( loss_att ).mean()
@@ -426,7 +426,11 @@ class GMMAccuracy(nn.Module):
 ## Baseline clasification
 
 class TopkAccuracy(nn.Module):
-
+    """
+    when top k is 1,2,3, ..., the corresponding accuracy
+    accuracy: the correctly predicted labels
+    :return the accuracies for specified values of k
+    """
     def __init__(self, topk=(1,)):
         super(TopkAccuracy, self).__init__()
         self.topk = topk
@@ -437,6 +441,7 @@ class TopkAccuracy(nn.Module):
         maxk = max(self.topk)
         batch_size = target.size(0)
 
+        # ???
         pred = output.topk(maxk, 1, True, True)[1].t()
         correct = pred.eq(target.view(1, -1).expand_as(pred))
 

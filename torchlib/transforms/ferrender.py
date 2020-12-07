@@ -139,6 +139,9 @@ class Generator(object):
 
     def generate(self, image, back, pad = 10 ):
         '''generate image
+        first resize image to 128 x 128,
+        then padding image with 2 * pad of 0s
+        randomly select one piece in background
         '''
         
         imsize = 128 #256
@@ -154,7 +157,8 @@ class Generator(object):
         im_h,im_w = im_h+2*pad, im_w+2*pad
         
         mask = ( image < 1.0 ).astype( np.uint8 )
-        
+
+        # ???
         dz = 50*rn.random()
         dx = int( rn.random() * ( (bk_w + dz) - im_w ) )
         dy = int( rn.random() * ( (bk_h + dz) - im_h ) )

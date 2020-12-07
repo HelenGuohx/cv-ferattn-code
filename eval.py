@@ -84,8 +84,8 @@ def main(params=None):
     experiments = [ 
         { 'name': namedataset,        'subset': FactoryDataset.training,   'real': True },
         { 'name': namedataset,        'subset': FactoryDataset.validation, 'real': True },
-        { 'name': namedataset+'dark', 'subset': FactoryDataset.training,   'real': False },
-        { 'name': namedataset+'dark', 'subset': FactoryDataset.validation, 'real': False },
+        # { 'name': namedataset+'dark', 'subset': FactoryDataset.training,   'real': False },
+        # { 'name': namedataset+'dark', 'subset': FactoryDataset.validation, 'real': False },
         ]
     
     # representation datasets
@@ -204,8 +204,8 @@ def main(params=None):
             print( '|{}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{}\t|{}\t'.format(
                 i, 
                 acc, precision, recall, f1_score,
-                subset, real,
-            ).replace('.',',')  )
+                subset, real
+            ))
 
 
             #|Name|Dataset|Cls|Acc| ...

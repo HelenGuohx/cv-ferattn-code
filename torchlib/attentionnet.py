@@ -254,7 +254,8 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
         pretrained=False,
         size_input=388,
         num_classes=8,
-        backbone='preactresnet'
+        backbone='preactresnet',
+        breal=True
         ):
         """
         Create
@@ -285,138 +286,32 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             backbone
         )
 
-        self.logger_train = Logger( 'Train', ['loss', 'loss_bce', 'loss_att' ], [ 'topk'], self.plotter  )
-        self.logger_val   = Logger( 'Val  ', ['loss', 'loss_bce', 'loss_att' ], [ 'topk'], self.plotter )
+        self.logger_train = Logger( 'Train', ['loss', 'loss_bce', 'loss_att' ], [ 'topk_accu'], self.plotter  )
+        self.logger_val   = Logger( 'Val  ', ['loss', 'loss_bce', 'loss_att' ], [ 'topk_accu'], self.plotter )
+        self.breal = breal
 
 
     def training(self, data_loader, epoch=0):
 
-        #reset logger
-        self.logger_train.reset()
-        data_time  = AverageMeter()
-        batch_time = AverageMeter()
-
-        # switch to evaluate mode
+        # switch to training mode
         self.net.train()
-
-        end = time.time()
-        for i, (x_org, x_img, y_mask, meta ) in enumerate(data_loader):
-
-            # measure data loading time
-            data_time.update(time.time() - end)
-            batch_size = x_img.shape[0]
-
-            y_lab = meta[:,0]
-            y_theta   = meta[:,1:].view(-1, 2, 3)
-
-            if self.cuda:
-                x_org   = x_org.cuda()
-                x_img   = x_img.cuda()
-                y_mask  = y_mask.cuda()
-                y_lab   = y_lab.cuda()
-                y_theta = y_theta.cuda()
-
-            # fit (forward)
-            y_lab_hat, att, _, _ = self.net( x_img, x_org )
-
-            # measure accuracy and record loss
-            loss_bce  = self.criterion_bce( y_lab_hat, y_lab.long() )
-            loss_att  = self.criterion_att( x_org, y_mask, att )
-            loss      = loss_bce + loss_att
-            topk      = self.topk( y_lab_hat, y_lab.long() )
-
-            # optimizer
-            self.optimizer.zero_grad()
-            (loss*batch_size).backward()
-            self.optimizer.step()
-
-            # update
-            self.logger_train.update(
-                {'loss': loss.cpu().item(), 'loss_bce': loss_bce.cpu().item(), 'loss_att':loss_att.cpu().item() },
-                {'topk': topk[0][0].cpu() },
-                batch_size,
-                )
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if i % self.print_freq == 0:
-                self.logger_train.logger( epoch, epoch + float(i+1)/len(data_loader), i, len(data_loader), batch_time,   )
+        self.batch_iteration(data_loader, epoch, self.logger_train, is_train=True, breal=self.breal)
 
     def evaluate(self, data_loader, epoch=0):
-
-        # reset loader
-        self.logger_val.reset()
-        batch_time = AverageMeter()
-
-        # switch to evaluate mode
         self.net.eval()
         with torch.no_grad():
-            end = time.time()
-            for i, (x_org, x_img, y_mask, meta) in enumerate(data_loader):
-
-                # get data (image, label)
-                batch_size = x_img.shape[0]
-
-                y_lab = meta[:,0]
-                y_theta   = meta[:,1:].view(-1, 2, 3)
-
-                if self.cuda:
-                    x_org   = x_org.cuda()
-                    x_img   = x_img.cuda()
-                    y_mask  = y_mask.cuda()
-                    y_lab   = y_lab.cuda()
-                    y_theta = y_theta.cuda()
-
-
-                # fit (forward)
-                y_lab_hat, att, fmap, srf  = self.net( x_img, x_org )
-
-                # measure accuracy and record loss
-                loss_bce  = self.criterion_bce(  y_lab_hat, y_lab.long() )
-                loss_att  = self.criterion_att( x_org, y_mask, att )
-                loss      = loss_bce + loss_att
-                topk      = self.topk( y_lab_hat, y_lab.long() )
-
-                # measure elapsed time
-                batch_time.update(time.time() - end)
-                end = time.time()
-
-                # update
-                self.logger_val.update(
-                    {'loss': loss.cpu().item(), 'loss_bce': loss_bce.cpu().item(), 'loss_att':loss_att.cpu().item() },
-                    {'topk': topk[0][0].cpu() },
-                    batch_size,
-                    )
-
-                if i % self.print_freq == 0:
-                    self.logger_val.logger(
-                        epoch, epoch, i,len(data_loader),
-                        batch_time,
-                        bplotter=False,
-                        bavg=True,
-                        bsummary=False,
-                        )
+            self.batch_iteration(data_loader, epoch, self.logger_val, is_train=False, breal=self.breal)
 
         #save validation loss
         self.vallosses = self.logger_val.info['loss']['loss'].avg
-        acc = self.logger_val.info['metrics']['topk'].avg
-
-        self.logger_val.logger(
-            epoch, epoch, i, len(data_loader),
-            batch_time,
-            bplotter=True,
-            bavg=True,
-            bsummary=True,
-            )
+        acc = self.logger_val.info['metrics']['topk_accu'].avg
 
         #vizual_freq
-        if epoch % self.view_freq == 0:
+        # if epoch % self.view_freq == 0:
 
-            att   = att[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-            srf   = srf[0,:,:,:].permute( 1,2,0 ).sum(dim=2)
-            fmap  = fmap[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
+            # att   = att[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
+            # srf   = srf[0,:,:,:].permute( 1,2,0 ).sum(dim=2)
+            # fmap  = fmap[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
 
             # self.visheatmap.show('Image', x_img.data.cpu()[0].numpy()[0,:,:])
             # self.visheatmap.show('Image Attention',att.cpu().numpy().astype(np.float32) )
@@ -424,6 +319,95 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             # self.visheatmap.show('Attention Map',fmap.cpu().numpy().astype(np.float32) )
 
         return acc
+
+    def batch_iteration(self, data_loader, epoch, logger, is_train, breal):
+        # reset logger
+        # reset loss and metrics
+        logger.reset()
+
+        # reset data loading time
+        data_time = AverageMeter()
+
+        # reset batch fitting time
+        batch_time = AverageMeter()
+
+        end = time.time()
+        for i, sample in enumerate(data_loader):
+
+            # measure data loading time
+            data_time.update(time.time() - end)
+
+            if breal:
+                x_img, y_lab = sample['image'], sample['label']
+                y_lab = y_lab.argmax(dim=1)
+
+                if self.cuda:
+                    x_img = x_img.cuda()
+                    y_lab = y_lab.cuda()
+
+                # fit (forward)
+                y_lab_hat, att, _, _ = self.net(x_img)
+
+                # measure accuracy and record loss
+                loss_bce = self.criterion_bce(y_lab_hat, y_lab.long())
+                loss_att = self.criterion_att(x_img, att)
+                loss = loss_bce + loss_att
+                topk = self.topk(y_lab_hat, y_lab.long())
+
+            else:
+                x_org, x_img, y_mask, meta = sample
+                y_lab = meta[:, 0]
+                y_theta = meta[:, 1:].view(-1, 2, 3)
+
+                if self.cuda:
+                    x_org = x_org.cuda()
+                    x_img = x_img.cuda()
+                    y_mask = y_mask.cuda()
+                    y_lab = y_lab.cuda()
+                    y_theta = y_theta.cuda()
+
+                # fit (forward)
+                y_lab_hat, att, _, _ = self.net(x_img, x_org)
+
+                # measure accuracy and record loss
+                loss_bce = self.criterion_bce(y_lab_hat, y_lab.long())
+                loss_att = self.criterion_att(x_org, att, y_mask)
+                loss = loss_bce + loss_att
+                topk = self.topk(y_lab_hat, y_lab.long())
+
+            batch_size = x_img.shape[0]
+
+            if is_train:
+                # optimizer
+                self.optimizer.zero_grad()
+                (loss * batch_size).backward()
+                self.optimizer.step()
+
+            # update
+            logger.update(
+                {'loss': loss.cpu().item(), 'loss_bce': loss_bce.cpu().item(), 'loss_att': loss_att.cpu().item()},
+                {'topk_accu': topk[0][0].cpu()},
+                batch_size,
+            )
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            if i % self.print_freq == 0:
+                logger.logger(epoch, epoch + float(i + 1) / len(data_loader), i + 1, len(data_loader),
+                                         batch_time)
+
+        if not is_train:
+            logger.logger(
+                epoch, epoch, i, len(data_loader),
+                batch_time,
+                bplotter=True,
+                bavg=True,
+                bsummary=True,
+            )
+
+
 
     def representation( self, dataloader, breal=True ):
         """
@@ -453,7 +437,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
                 Y_lab_hats.append(y_lab_hat.data.cpu())
                 Z_hats.append(att_out.cpu().numpy())
 
-        Y_labs = np.concatenate( Y_labs, axis=0 )
+        Y_labs = np.concatenate( Y_labs, axis=0)
         Y_lab_hats = np.concatenate( Y_lab_hats, axis=0 )
         Z_hats = np.concatenate(Z_hats, axis=0)
         return Y_labs, Y_lab_hats, Z_hats

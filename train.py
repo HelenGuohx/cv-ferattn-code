@@ -86,6 +86,7 @@ def arg_parser():
                         help='train iteration')
     parser.add_argument('--testiteration', default=100, type=int, metavar='N',
                         help='train iteration')
+    parser.add_argument('--breal', action='store_true', help='dataset is real or synthetic')
 
     return parser
 
@@ -107,13 +108,11 @@ def main(params=None):
     view_freq=1
     trainiteration = args.trainiteration
     testiteration = args.testiteration
+    breal = args.breal
 
     fname = args.name_method
     fnet = {
-        'attnet':AttentionNeuralNet,
-        # 'attstnnet':AttentionSTNNeuralNet,
-        # 'attgmmnet':AttentionGMMNeuralNet,
-        # 'attgmmstnnet':AttentionGMMSTNNeuralNet
+        'attnet':AttentionNeuralNet
         }
 
     network = fnet[fname](
@@ -138,7 +137,8 @@ def main(params=None):
         lrsch=args.scheduler,
         pretrained=args.finetuning,
         size_input=imsize,
-        num_classes=num_classes
+        num_classes=num_classes,
+        breal=breal
         )
 
     # resume
@@ -151,37 +151,68 @@ def main(params=None):
 
     # datasets
     # training dataset
-    # imagesize = 64
-    # train_data = Dataset(
-    #     data=FactoryDataset.factory(
-    #         pathname=args.data,
-    #         name=args.name_dataset,
-    #         subset=FactoryDataset.training,
-    #         idenselect=idenselect,
-    #         download=True
-    #         ),
-    #     num_channels=3,
-    #     transform=get_transforms_det(imagesize),
-    # )
-
-    SyntheticFaceDataset, SecuencialSyntheticFaceDataset
-    train_data = SyntheticFaceDataset(
-        data=FactoryDataset.factory(
-            pathname=args.data,
-            name=args.name_dataset,
-            subset=FactoryDataset.training,
-            idenselect=idenselect,
-            download=True
-            ),
-        pathnameback=args.databack,
-        ext='jpg',
-        count=trainiteration,
-        num_channels=num_channels,
-        iluminate=True, angle=30, translation=0.2, warp=0.1, factor=0.2,
-        transform_data=get_transforms_aug( imsize ),
-        transform_image=get_transforms_det( imsize ),
+    if breal:
+        imagesize = 64
+        train_data = Dataset(
+            data=FactoryDataset.factory(
+                pathname=args.data,
+                name=args.name_dataset,
+                subset=FactoryDataset.training,
+                idenselect=idenselect,
+                download=True
+                ),
+            num_channels=3,
+            transform=get_transforms_det(imagesize),
+        )
+        # validate dataset
+        val_data = Dataset(
+            data=FactoryDataset.factory(
+                pathname=args.data,
+                name=args.name_dataset,
+                subset=FactoryDataset.training,
+                idenselect=idenselect,
+                download=True
+                ),
+            num_channels=3,
+            transform=get_transforms_det(imagesize),
         )
 
+    else:
+        # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
+        train_data = SyntheticFaceDataset(
+            data=FactoryDataset.factory(
+                pathname=args.data,
+                name=args.name_dataset,
+                subset=FactoryDataset.training,
+                idenselect=idenselect,
+                download=True
+                ),
+            pathnameback=args.databack,
+            ext='jpg',
+            count=trainiteration,
+            num_channels=num_channels,
+            iluminate=True, angle=30, translation=0.2, warp=0.1, factor=0.2,
+            transform_data=get_transforms_aug( imsize ),
+            transform_image=get_transforms_det( imsize ),
+            )
+
+        # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
+        val_data = SecuencialSyntheticFaceDataset(
+            data=FactoryDataset.factory(
+                pathname=args.data,
+                name=args.name_dataset,
+                idenselect=idenselect,
+                subset=FactoryDataset.validation,
+                download=True
+            ),
+            pathnameback=args.databack,
+            ext='jpg',
+            count=testiteration,
+            num_channels=num_channels,
+            iluminate=True, angle=30, translation=0.2, warp=0.1, factor=0.2,
+            transform_data=get_transforms_aug(imsize),
+            transform_image=get_transforms_det(imsize),
+        )
 
     num_train = len(train_data)
     if args.balance:
@@ -192,50 +223,18 @@ def main(params=None):
     else:
         sampler = SubsetRandomSampler(np.random.permutation( num_train ) )
 
-
     train_loader = DataLoader(train_data, batch_size=args.batch_size,
-        num_workers=args.workers, pin_memory=network.cuda, drop_last=True, sampler=sampler ) #shuffle=True,
-
-
-    # # validate dataset
-    # val_data = Dataset(
-    #     data=FactoryDataset.factory(
-    #         pathname=args.data,
-    #         name=args.name_dataset,
-    #         subset=FactoryDataset.training,
-    #         idenselect=idenselect,
-    #         download=True
-    #         ),
-    #     num_channels=3,
-    #     transform=get_transforms_det(imagesize),
-    # )
-    SyntheticFaceDataset, SecuencialSyntheticFaceDataset
-    val_data = SecuencialSyntheticFaceDataset(
-        data=FactoryDataset.factory(
-            pathname=args.data,
-            name=args.name_dataset,
-            idenselect=idenselect,
-            subset=FactoryDataset.validation,
-            download=True
-            ),
-        pathnameback=args.databack,
-        ext='jpg',
-        count=testiteration,
-        num_channels=num_channels,
-        iluminate=True, angle=30, translation=0.2, warp=0.1, factor=0.2,
-        transform_data=get_transforms_aug( imsize ),
-        transform_image=get_transforms_det( imsize ),
-        )
+                              num_workers=args.workers, pin_memory=network.cuda, drop_last=True, sampler=sampler ) #shuffle=True,
 
     val_loader = DataLoader(val_data, batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=network.cuda, drop_last=False)
+                            num_workers=args.workers, pin_memory=network.cuda, drop_last=False)
 
     # print neural net class
     print('SEG-Torch: {}'.format(datetime.datetime.now()) )
     print(network)
 
     # training neural net
-    network.fit( train_loader, val_loader, args.epochs, args.snapshot )
+    network.fit( train_loader, val_loader, args.epochs, args.snapshot)
 
     print("Optimization Finished!")
     print("DONE!!!")

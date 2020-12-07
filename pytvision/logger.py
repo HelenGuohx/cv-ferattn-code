@@ -25,6 +25,9 @@ class AverageMeter(object):
     
 
 class AverageFilterMeter(AverageMeter):
+    """
+    create buffer to store vals of depth
+    """
     def __init__(self, depth=10):
         
         self.depth = depth
@@ -83,7 +86,7 @@ class Logger(object):
 
     def logger(self, epoch, iterepoch, i, num, time, bplotter=True, bavg=False, bsummary=False  ): 
 
-        strinfo  = '|{}: {:4d}|{:4d}|{:4d} '.format(self.title_name, epoch, i, num)
+        strinfo  = '|{}: epoch:{:4d}| batch: {:4d}/{:4d} '.format(self.title_name, epoch, i, num)
         strinfo += '|time: {:8.4f} '.format(time.val)  
         strsummary = '\nValidation:\n'       
 

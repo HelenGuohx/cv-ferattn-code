@@ -146,23 +146,23 @@ class NeuralNetAbstract(object):
     def fit( self, train_loader, val_loader, epochs=100, snapshot=10 ):
 
         best_prec = 0
-        print('\nEpoch: {}/{}(0%)'.format(self.start_epoch, epochs))
+        print('\nEpoch(Before training): {}/{}(0%)'.format(self.start_epoch, epochs))
         print('-' * 25)
 
         self.evaluate(val_loader, epoch=self.start_epoch)        
-        for epoch in range(self.start_epoch, epochs):       
-
+        for epoch in range(self.start_epoch, epochs):
+            epoch += 1
             try:
                 
                 self._to_beging_epoch(epoch, epochs, train_loader, val_loader)
 
+                print('\nEpoch: {}/{} ({}%)'.format(epoch, epochs, int((float(epoch)/epochs)*100) ) )
+                print('-' * 25)
+
                 self.adjust_learning_rate(epoch)     
                 self.training(train_loader, epoch)
 
-                print('\nEpoch: {}/{} ({}%)'.format(epoch,epochs, int((float(epoch)/epochs)*100) ) )
-                print('-' * 25)
-                
-                prec = self.evaluate(val_loader, epoch+1 )            
+                prec = self.evaluate(val_loader, epoch)
 
                 # remember best prec@1 and save checkpoint
                 is_best = prec > best_prec
