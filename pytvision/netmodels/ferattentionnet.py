@@ -273,7 +273,7 @@ class FERAttentionNet(nn.Module):
         self.num_filters = num_filters
         self.size_input=64
         
-        #////////
+
         #attention module
         self.attention_map = AttentionResNet( in_channels=num_channels, out_channels=num_classes, pretrained=True  )
         

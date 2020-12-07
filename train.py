@@ -6,9 +6,10 @@ import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 
-from torchlib.datasets.fersynthetic  import SecuencialSyntheticFaceDataset
+from torchlib.datasets.fersynthetic  import SecuencialSyntheticFaceDataset, SyntheticFaceDataset
 from torchlib.datasets.factory import FactoryDataset
-from torchlib.attentionnet import AttentionNeuralNet, AttentionSTNNeuralNet, AttentionGMMNeuralNet, AttentionGMMSTNNeuralNet
+from torchlib.attentionnet import AttentionNeuralNet
+from torchlib.datasets.datasets import Dataset
 
 import datetime
 from argparse import ArgumentParser
@@ -110,9 +111,9 @@ def main(params=None):
     fname = args.name_method
     fnet = {
         'attnet':AttentionNeuralNet,
-        'attstnnet':AttentionSTNNeuralNet,
-        'attgmmnet':AttentionGMMNeuralNet,
-        'attgmmstnnet':AttentionGMMSTNNeuralNet
+        # 'attstnnet':AttentionSTNNeuralNet,
+        # 'attgmmnet':AttentionGMMNeuralNet,
+        # 'attgmmstnnet':AttentionGMMSTNNeuralNet
         }
 
     network = fnet[fname](
@@ -150,8 +151,21 @@ def main(params=None):
 
     # datasets
     # training dataset
-    # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
-    train_data = SecuencialSyntheticFaceDataset(
+    # imagesize = 64
+    # train_data = Dataset(
+    #     data=FactoryDataset.factory(
+    #         pathname=args.data,
+    #         name=args.name_dataset,
+    #         subset=FactoryDataset.training,
+    #         idenselect=idenselect,
+    #         download=True
+    #         ),
+    #     num_channels=3,
+    #     transform=get_transforms_det(imagesize),
+    # )
+
+    SyntheticFaceDataset, SecuencialSyntheticFaceDataset
+    train_data = SyntheticFaceDataset(
         data=FactoryDataset.factory(
             pathname=args.data,
             name=args.name_dataset,
@@ -183,8 +197,19 @@ def main(params=None):
         num_workers=args.workers, pin_memory=network.cuda, drop_last=True, sampler=sampler ) #shuffle=True,
 
 
-    # validate dataset
-    # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
+    # # validate dataset
+    # val_data = Dataset(
+    #     data=FactoryDataset.factory(
+    #         pathname=args.data,
+    #         name=args.name_dataset,
+    #         subset=FactoryDataset.training,
+    #         idenselect=idenselect,
+    #         download=True
+    #         ),
+    #     num_channels=3,
+    #     transform=get_transforms_det(imagesize),
+    # )
+    SyntheticFaceDataset, SecuencialSyntheticFaceDataset
     val_data = SecuencialSyntheticFaceDataset(
         data=FactoryDataset.factory(
             pathname=args.data,
@@ -286,4 +311,4 @@ if __name__ == '__main__':
 --arch={ARCH} \
 --finetuning "
 
-    main(params=args)
+    main()

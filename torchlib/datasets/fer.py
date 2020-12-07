@@ -89,7 +89,7 @@ def adjust( image, plm  ):
     return image_rot, plm_rot
 
 
-def split_train_valid(path, filename, train_size):
+def split_train_valid(path, filename, test_actor_num):
     data_dir = os.path.join(path, filename + '.h5')
     f = h5py.File(data_dir, 'r')
     data = np.array(f["data"])
@@ -100,15 +100,14 @@ def split_train_valid(path, filename, train_size):
     actors = np.unique(iactor)
     np.random.seed(42)
     actors = np.random.permutation(actors)
-    train_size = int(len(actors) * train_size) if isinstance(train_size, float) else train_size
-    train_actors = actors[:train_size]
+    test_actors = actors[:test_actor_num]
 
-    train_index = np.zeros(len(labels))
-    for i in train_actors:
-        train_index[iactor == i] = 1
-    test_index = 1 - train_index
+    test_index = np.zeros(len(labels))
+    for i in test_actors:
+        test_index[iactor == i] = 1
+    train_index = 1 - test_index
 
-    print(f"train size: {train_size}, test size: {len(labels) - train_size}")
+    print(f"train size: {sum(train_index)}, test size: {sum(test_index)}")
 
     print("Save training data into ", os.path.join(path, filename + '_train.h5'))
     with h5py.File(os.path.join(path, filename + '_train.h5'), 'w') as f:
