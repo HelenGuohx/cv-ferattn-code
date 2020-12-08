@@ -266,12 +266,13 @@ class FERAttentionNet(nn.Module):
     """FERAttentionNet 
     """
     
-    def __init__(self, num_classes=8, num_channels=3, num_filters=32 ):
+    def __init__(self, num_classes=8, num_channels=3, num_filters=32 , ave_num=2):
         
         super().__init__()
         self.num_classes = num_classes
         self.num_filters = num_filters
         self.size_input=64
+        self.ave_num = ave_num
         
 
         #attention module
@@ -337,7 +338,7 @@ class FERAttentionNet(nn.Module):
         
         #classification
         if self.backcoder == 'preactresnet':
-            att_pool = F.avg_pool2d(att_out, 2)                                                     #if preactresnet 
+            att_pool = F.avg_pool2d(att_out, self.ave_num)                                                     #if preactresnet
         elif self.backcoder == 'inception':
             att_pool = F.interpolate(att_out, size=(299,299) ,mode='bilinear', align_corners=False) #if inseption    
         elif self.backcoder == 'resnet':

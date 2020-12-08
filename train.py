@@ -86,6 +86,7 @@ def arg_parser():
                         help='train iteration')
     parser.add_argument('--testiteration', default=100, type=int, metavar='N',
                         help='train iteration')
+    parser.add_argument('--aveNum', default=2, type=int, help="number for the average pooling layer")
 
     return parser
 
@@ -107,6 +108,7 @@ def main(params=None):
     view_freq=1
     trainiteration = args.trainiteration
     testiteration = args.testiteration
+    aveNum = args.aveNum
 
     fname = args.name_method
     fnet = {
@@ -138,7 +140,8 @@ def main(params=None):
         lrsch=args.scheduler,
         pretrained=args.finetuning,
         size_input=imsize,
-        num_classes=num_classes
+        num_classes=num_classes,
+        ave_num=aveNum
         )
 
     # resume
