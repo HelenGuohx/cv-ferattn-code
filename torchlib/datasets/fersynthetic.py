@@ -52,7 +52,11 @@ class SyntheticFaceDataset( data.Dataset ):
         transform_image=None,
         transform_data=None,
         ):
-        """Initialization           
+        """Initialization
+        :params
+            pathnameback: when it is none, background is white
+            count: trainiteration/testiteration, to generate more images with different background
+
         """            
               
         self.data = data

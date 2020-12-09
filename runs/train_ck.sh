@@ -6,8 +6,8 @@ DATA='~/.datasets'
 NAMEDATASET='ck'
 PROJECT='../out/attnet'
 EPOCHS=60
-TRAINITERATION=288
-TESTITERATION=28
+TRAINITERATION=1000
+TESTITERATION=100
 BATCHSIZE=200 #32, 64, 128, 160, 200, 240
 LEARNING_RATE=0.0001
 MOMENTUM=0.5
@@ -25,11 +25,11 @@ NUMCHANNELS=3
 DIM=32
 SNAPSHOT=10
 IMAGESIZE=64
-KFOLD=0
+KFOLD=5
 NACTOR=10
 BACKBONE='preactresnet' #preactresnet, resnet, cvgg
-
-EXP_NAME='feratt_'$NAMEMETHOD'_'$ARCH'_'$LOSS'_'$OPT'_'$NAMEDATASET'_dim'$DIM'_bb'$BACKBONE'_fold'$KFOLD'_000'
+BREAL='real' #real, synthetic
+EXP_NAME='feratt_'$NAMEMETHOD'_'$ARCH'_'$LOSS'_'$OPT'_'$NAMEDATASET'_'$BREAL'_dim'$DIM'_bb'$BACKBONE'_fold'$KFOLD'_000'
 
 rm -rf $PROJECT/$EXP_NAME/$EXP_NAME.log
 rm -rf $PROJECT/$EXP_NAME/
@@ -37,15 +37,16 @@ mkdir -p $PROJECT
 mkdir -p $PROJECT/$EXP_NAME
 
 
+
 CUDA_VISIBLE_DEVICES=0 python ../train.py \
 $DATA \
---databack=$DATABACK \
 --name-dataset=$NAMEDATASET \
+--databack=$DATABACK \
+--trainiteration=$TRAINITERATION \
+--testiteration=$TESTITERATION \
 --project=$PROJECT \
 --name=$EXP_NAME \
 --epochs=$EPOCHS \
---trainiteration=$TRAINITERATION \
---testiteration=$TESTITERATION \
 --kfold=$KFOLD \
 --nactor=$NACTOR \
 --batch-size=$BATCHSIZE \
@@ -66,7 +67,7 @@ $DATA \
 --name-method=$NAMEMETHOD \
 --arch=$ARCH \
 --finetuning \
---breal \
+--breal=$BREAL \
 2>&1 | tee -a $PROJECT/$EXP_NAME/$EXP_NAME.log \
 
 #--parallel \

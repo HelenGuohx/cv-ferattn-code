@@ -10,7 +10,7 @@ class Attloss(nn.Module):
         super(Attloss, self).__init__()
         self.maxvalueloss = 30
 
-    def forward(self, x_org, att, y_mask=None):
+    def forward(self, x_org, att):
         d = torch.exp( 6.0*torch.abs( x_org - att ) )
         loss_att = (d-1)/(d+1)
         loss_att = ( loss_att ).mean()
@@ -23,7 +23,7 @@ class AttMSEloss(nn.Module):
 
     def forward(self, x_org, y_mask, att):
         loss_att = ((( (x_org*y_mask[:,1,...].unsqueeze(dim=1)) - att ) ** 2)).mean()
-        loss_att = ((( x_org - att ) ** 2)).mean()
+        # loss_att = ((( x_org - att ) ** 2)).mean()
         loss_att = torch.clamp(loss_att, max=30)
         return 10*loss_att
 
@@ -324,6 +324,8 @@ class DGMMLoss(nn.Module):
             alpha=2.0
             k=3
 
+            # when first parameter == second param, beta distribution is gaussian distribution
+            # ????
             lam = torch.distributions.beta.Beta(torch.Tensor([alpha]), torch.Tensor([alpha])).sample()
             indices = torch.randperm(x.shape[0])
             if self.cuda: lam = lam.cuda()
@@ -441,7 +443,7 @@ class TopkAccuracy(nn.Module):
         maxk = max(self.topk)
         batch_size = target.size(0)
 
-        # ???
+        # tensor function top largest values with indice
         pred = output.topk(maxk, 1, True, True)[1].t()
         correct = pred.eq(target.view(1, -1).expand_as(pred))
 

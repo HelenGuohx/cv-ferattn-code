@@ -48,7 +48,9 @@ def arg_parser():
     parser.add_argument('--namedataset', metavar='S',    help='name to dataset')
     parser.add_argument('--pathnameout', metavar='DIR',  help='path to out dataset')
     parser.add_argument('--filename',    metavar='S',    help='name of the file output')
-    parser.add_argument('--model',       metavar='S',    help='filename model')  
+    parser.add_argument('--model',       metavar='S',    help='filename model')
+    parser.add_argument('--breal', type=str, default='real', help='dataset is real or synthetic')
+
     return parser
 
 
@@ -67,6 +69,7 @@ def main(params=None):
     pathnamemodel   = args.model
     pathproject     = os.path.join( project, projectname )
     namedataset     = args.namedataset
+    breal           = args.breal
     
     no_cuda=False
     parallel=False
@@ -82,8 +85,8 @@ def main(params=None):
     
     # experiments
     experiments = [ 
-        { 'name': namedataset,        'subset': FactoryDataset.training,   'real': True },
-        { 'name': namedataset,        'subset': FactoryDataset.validation, 'real': True },
+        { 'name': namedataset,        'subset': FactoryDataset.training,   'status': breal },
+        { 'name': namedataset,        'subset': FactoryDataset.validation, 'status': breal },
         # { 'name': namedataset+'dark', 'subset': FactoryDataset.training,   'real': False },
         # { 'name': namedataset+'dark', 'subset': FactoryDataset.validation, 'real': False },
         ]
@@ -105,22 +108,21 @@ def main(params=None):
         cudnn.benchmark = True
 
         # load model
-        os.path.isfile(pathnamemodel)
         if network.load( pathnamemodel ) is not True:
             print('>>Error!!! load model')
             assert(False)  
     
 
         size_input = network.size_input
-        for  i, experiment in enumerate(experiments):
+        for i, experiment in enumerate(experiments):
             
             name_dataset = experiment['name']
             subset = experiment['subset']
-            breal = experiment['real']
+            breal = experiment['status']
             dataset = []
                         
             # load dataset 
-            if breal:               
+            if breal == 'real':
                 
                 # real dataset 
                 dataset = Dataset(    
@@ -157,18 +159,18 @@ def main(params=None):
 
             dataloader = DataLoader(dataset, batch_size=100, shuffle=False, num_workers=10 )
             
-            print("\nIs real dataset:", breal)
+            print("\ndataset:", breal)
             print("Subset:", subset)
             print("Classes", dataloader.dataset.data.classes)
             print("size of data:", len(dataset))
             print("num of batches", len(dataloader))
 
             # representation 
-            Y_labs, Y_lab_hats, Zs = network.representation( dataloader, breal )            
-            print("Y_lab_hats shape: {0}, Zs shape: {1}, y_labs shape: {2}".format(Y_lab_hats.shape, Zs.shape, Y_labs.shape))
+            Y_labs, Y_lab_hats= network.representation( dataloader, breal )
+            print("Y_lab_hats shape: {}, y_labs shape: {}".format(Y_lab_hats.shape, Y_labs.shape))
             
-            reppathname = os.path.join( pathproject, 'rep_{}_{}_{}_{}.pth'.format(projectname, namedataset, subset, 'real' if breal else 'no_real' ) )
-            torch.save( { 'Yh':Y_lab_hats, 'Z':Zs, 'Y':Y_labs }, reppathname )
+            reppathname = os.path.join( pathproject, 'rep_{}_{}_{}.pth'.format(namedataset, subset, breal ) )
+            torch.save( { 'Yh':Y_lab_hats, 'Y':Y_labs }, reppathname )
             print( 'save representation ...' )
             
 
@@ -181,14 +183,13 @@ def main(params=None):
 
             name_dataset = experiment['name']
             subset = experiment['subset']
-            breal = experiment['real']
-            real = 'real' if breal else 'no_real'
+            breal = experiment['status']
+            real = breal
 
-            rep_pathname = os.path.join( pathproject, 'rep_{}_{}_{}_{}.pth'.format(
-                projectname, namedataset, subset, real) )
+            rep_pathname = os.path.join( pathproject, 'rep_{}_{}_{}.pth'.format(
+                namedataset, subset, real) )
 
             data_emb = torch.load(rep_pathname)
-            Xto = data_emb['Z']
             Yto = data_emb['Y']
             Yho = data_emb['Yh']
 
@@ -324,4 +325,4 @@ if __name__ == '__main__':
 --filename={FILENAME} \
 --model={MODEL}".split()
 
-    main(params=args)
+    main()

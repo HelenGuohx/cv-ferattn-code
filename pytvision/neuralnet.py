@@ -143,13 +143,12 @@ class NeuralNetAbstract(object):
     def representation(self, data_loader):
         pass
     
-    def fit( self, train_loader, val_loader, epochs=100, snapshot=10 ):
-
+    def fit( self, train_loader, val_loader, epochs=100, snapshot=10):
         best_prec = 0
         print('\nEpoch(Before training): {}/{}(0%)'.format(self.start_epoch, epochs))
         print('-' * 25)
 
-        self.evaluate(val_loader, epoch=self.start_epoch)        
+        self.evaluate(val_loader, epoch=self.start_epoch)
         for epoch in range(self.start_epoch, epochs):
             epoch += 1
             try:

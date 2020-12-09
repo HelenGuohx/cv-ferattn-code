@@ -263,12 +263,6 @@ class AttentionResNet(nn.Module):
 
 class FERAttentionNet(nn.Module):
     """FERAttentionNet
-    :returns
-    y: classification
-    att: feature attention map
-    att_out: normalized attention output
-    g_att: attention module
-    g_ft: feature extraction
     """
 
     def __init__(self, dim=32, num_classes=1, num_channels=3, backbone='preactresnet', num_filters=32 ):
@@ -279,7 +273,7 @@ class FERAttentionNet(nn.Module):
 
         # Attention module
         # TODO March 01, 2019: Include select backbone model attention
-        self.attention_map = AttentionResNet( in_channels=num_channels, out_channels=num_classes, pretrained=True)
+        self.attention_map = AttentionResNet( in_channels=num_channels, out_channels=num_classes, pretrained=True  )
 
         # Feature module
         self.conv_input = nn.Conv2d(in_channels=num_channels, out_channels=num_classes, kernel_size=9, stride=1, padding=4, bias=True)
@@ -307,7 +301,6 @@ class FERAttentionNet(nn.Module):
         else:
             assert(False)
 
-        self.repr_linear = nn.Linear(32 * 32 * num_channels, 1)
 
 
     def make_layer(self, block, num_of_layer, num_ft):
@@ -348,9 +341,274 @@ class FERAttentionNet(nn.Module):
         else:
             assert(False)
 
-        y = self.netclass(att_pool)
+        y = self.netclass( att_pool )
 
         return y, att, g_att, g_ft
 
 
 
+
+
+class FERAttentionGMMNet(nn.Module):
+    """FERAttentionGMMNet
+    """
+
+    def __init__(self, dim=32, num_classes=1, num_channels=3, backbone='preactresnet', num_filters=32 ):
+
+        super().__init__()
+        self.num_classes = num_classes
+        self.num_filters = num_filters
+
+        # Attention module
+        # TODO March 01, 2019: Include select backbone model attention
+        self.attention_map = AttentionResNet( in_channels=num_channels, out_channels=num_classes, pretrained=True )
+
+        # Feature module
+        self.conv_input = nn.Conv2d(in_channels=num_channels, out_channels=num_classes, kernel_size=9, stride=1, padding=4, bias=True)
+        self.feature    = self.make_layer(_Residual_Block_SR, 8, num_classes )
+        self.conv_mid   = nn.Conv2d(in_channels=num_classes, out_channels=num_classes, kernel_size=3, stride=1, padding=1, bias=True)
+
+        # Recostruction module
+        self.reconstruction = nn.Sequential(
+            ConvRelu( 2*num_classes+num_channels, num_filters),
+            nn.Conv2d(in_channels=num_filters, out_channels=num_channels, kernel_size=1, stride=1, padding=0, bias=True),
+        )
+        self.conv2_bn = nn.BatchNorm2d(num_channels)
+
+
+        # Select backbone for classification and reconstruction
+        self.backbone = backbone
+        if   self.backbone == 'preactresnet':
+             self.netclass = preactresnet.preactresembnetex18( dim=dim, num_classes=num_classes, num_channels=num_channels )
+        elif self.backbone == 'resnet':
+             self.netclass = resnet.resnetembex18(dim=dim, num_classes=num_classes, num_channels=num_channels )
+        elif self.backbone == 'cvgg':
+             self.netclass = cvgg.cvggembex13(dim=dim, num_classes=num_classes, num_channels=num_channels )
+        else:
+            assert(False)
+
+
+    def make_layer(self, block, num_of_layer, num_ft):
+        layers = []
+        for _ in range(num_of_layer):
+            layers.append(block(num_ft))
+        return nn.Sequential(*layers)
+
+
+    def forward(self, x, x_org=None ):
+
+        # Attention map
+        g_att = self.attention_map( x )
+
+        # Feature module
+        out = self.conv_input( x )
+        residual = out
+        out = self.feature( out )
+        out = self.conv_mid( out )
+        g_ft = torch.add( out, residual )
+
+        # Fusion
+        # \sigma(A) * F(I)
+        attmap = torch.mul( torch.sigmoid( g_att ) ,  g_ft )
+        att = self.reconstruction( torch.cat( ( attmap, x, g_att ) , dim=1 ) )
+        att = F.relu(self.conv2_bn(att))
+        att_out = normalize_layer(att)
+
+        # Select backbone classification
+        if   self.backbone == 'preactresnet':
+             att_pool = F.avg_pool2d(att_out, 2)                                                     #if preactresnet
+        elif self.backbone == 'inception':
+             att_pool = F.interpolate(att_out, size=(299,299) ,mode='bilinear', align_corners=False) #if inseption
+        elif self.backbone == 'resnet':
+             att_pool = F.interpolate(att_out, size=(224,224) ,mode='bilinear', align_corners=False) #if resnet
+        elif self.backbone == 'cvgg':
+             att_pool = att_out                                                                       #if vgg
+        else:
+            assert(False)
+
+        z, y = self.netclass( att_pool )
+
+        return z, y, att, g_att, g_ft
+
+class FERAttentionSTNNet(nn.Module):
+    """FERAttentionSTNNet
+    """
+
+    def __init__(self, dim=1, num_classes=1, num_channels=3, backbone='preactresnet', num_filters=32 ):
+
+        super().__init__()
+        self.num_classes = num_classes
+        self.num_filters = num_filters
+
+        # Attention module
+        # TODO March 01, 2019: Include select model attention
+        self.attention_map = AttentionResNet( in_channels=num_channels, out_channels=num_classes, pretrained=True  )
+
+        # Feature module
+        self.conv_input = nn.Conv2d(in_channels=num_channels, out_channels=num_classes, kernel_size=9, stride=1, padding=4, bias=True)
+        self.feature    = self.make_layer(_Residual_Block_SR, 8, num_classes )
+        self.conv_mid   = nn.Conv2d(in_channels=num_classes, out_channels=num_classes, kernel_size=3, stride=1, padding=1, bias=True)
+
+        # Recostruction module
+        self.reconstruction = nn.Sequential(
+            ConvRelu( 2*num_classes+num_channels, num_filters),
+            nn.Conv2d(in_channels=num_filters, out_channels=num_channels, kernel_size=1, stride=1, padding=0, bias=True),
+        )
+        self.conv2_bn = nn.BatchNorm2d(num_channels)
+
+        # Stn module
+        self.stn = stn.STN()
+
+        # Select backbone classification and reconstructions
+        self.backbone = backbone
+        if   self.backbone == 'preactresnet':
+             self.netclass = preactresnet.preactresnet18(num_classes=num_classes, num_channels=num_channels )
+        elif self.backbone == 'inception':
+             self.netclass = inception.inception_v3( num_classes=num_classes, num_channels=num_channels, transform_input=False, pretrained=True )
+        elif self.backbone == 'resnet':
+             self.netclass = resnet.resnet18( num_classes=num_classes, num_channels=num_channels )
+        elif self.backbone == 'cvgg':
+             self.netclass = cvgg.cvgg13( num_classes=num_classes, num_channels=num_channels )
+        else:
+            assert(False)
+
+
+
+    def make_layer(self, block, num_of_layer, num_ft):
+        layers = []
+        for _ in range(num_of_layer):
+            layers.append(block(num_ft))
+        return nn.Sequential(*layers)
+
+    def forward(self, x, x_org=None ):
+
+        # Attention map
+        g_att = self.attention_map( x )
+
+        #feature module
+        out = self.conv_input( x )
+        residual = out
+        out = self.feature( out )
+        out = self.conv_mid(out)
+        g_ft = torch.add(out, residual )
+
+        # Fusion
+        # \sigma(A) * F(I)
+        attmap = torch.mul( torch.sigmoid( g_att ) ,  g_ft )
+        att = self.reconstruction( torch.cat( ( attmap, x, g_att ) , dim=1 ) )
+        att = F.relu(self.conv2_bn(att))
+
+
+        #stn
+        theta = self.stn( att.mean(dim=1).unsqueeze(dim=1).detach() )
+        grid = F.affine_grid(theta, att.size())
+        att_stn = F.grid_sample(att, grid)
+        att_t = normalize_layer(att_stn)
+
+
+        #Select backbone classification
+        if self.backbone == 'preactresnet':
+            att_pool = F.avg_pool2d(att_t, 2)                                                     #if preactresnet
+        elif self.backbone == 'inception':
+            att_pool = F.interpolate(att_t, size=(299,299) ,mode='bilinear', align_corners=False) #if inseption
+        elif self.backbone == 'resnet':
+            att_pool = F.interpolate(att_t, size=(224,224) ,mode='bilinear', align_corners=False) #if resnet
+        elif self.backbone == 'cvgg':
+            att_pool = att_t                                                                      #if vgg
+        else:
+            assert(False)
+
+        # Classification
+        y = self.netclass( att_pool )
+
+        return y, att, theta, att_t, g_att, g_ft
+
+class FERAttentionGMMSTNNet(nn.Module):
+    """FERAttentionGMMSTNNet
+    """
+
+    def __init__(self, dim=32, num_classes=1, num_channels=3, backbone='preactresnet', num_filters=32 ):
+
+        super().__init__()
+        self.num_classes = num_classes
+        self.num_filters = num_filters
+
+        # Attention module
+        # TODO March 01, 2019: select backbone model attention
+        self.attention_map = AttentionResNet( in_channels=num_channels, out_channels=num_classes, pretrained=True  )
+
+        # Feature module
+        self.conv_input = nn.Conv2d(in_channels=num_channels, out_channels=num_classes, kernel_size=9, stride=1, padding=4, bias=True)
+        self.feature    = self.make_layer(_Residual_Block_SR, 8, num_classes )
+        self.conv_mid   = nn.Conv2d(in_channels=num_classes, out_channels=num_classes, kernel_size=3, stride=1, padding=1, bias=True)
+
+        # Recostruction module
+        self.reconstruction = nn.Sequential(
+            ConvRelu( 2*num_classes+num_channels, num_filters),
+            nn.Conv2d(in_channels=num_filters, out_channels=num_channels, kernel_size=1, stride=1, padding=0, bias=True),
+        )
+        self.conv2_bn = nn.BatchNorm2d(num_channels)
+
+        # Stn module
+        self.stn = stn.STN()
+
+        # Classification and reconstruction
+        self.backbone = backbone
+        if   self.backbone == 'preactresnet':
+             self.netclass = preactresnet.preactresembnetex18(  dim=dim, num_classes=num_classes, num_channels=num_channels )
+        elif self.backbone == 'resnet':
+             self.netclass = resnet.resnetembex18(dim=dim, num_classes=num_classes, num_channels=num_channels )
+        elif self.backbone == 'cvgg':
+             self.netclass = cvgg.cvggembex13(dim=dim, num_classes=num_classes, num_channels=num_channels )
+        else:
+            assert(False)
+
+
+
+    def make_layer(self, block, num_of_layer, num_ft):
+        layers = []
+        for _ in range(num_of_layer):
+            layers.append(block(num_ft))
+        return nn.Sequential(*layers)
+
+    def forward(self, x, x_org=None ):
+
+        # Attention module
+        g_att = self.attention_map( x )
+
+        # Feature module
+        out = self.conv_input( x )
+        residual = out
+        out = self.feature( out )
+        out = self.conv_mid(out)
+        g_ft = torch.add(out, residual )
+
+        # Fusion
+        # \sigma(A) * F(I)
+        attmap = torch.mul( torch.sigmoid( g_att ) ,  g_ft )
+        att = self.reconstruction( torch.cat( ( attmap, x, g_att ) , dim=1 ) )
+        att = F.relu(self.conv2_bn(att))
+        att_out = normalize_layer(att)
+
+        # Stn module
+        theta = self.stn( att_out.mean(dim=1).unsqueeze(dim=1).detach() )
+        grid = F.affine_grid(theta, att_out.size())
+        att_t = F.grid_sample(att_out, grid)
+
+
+        # Select backbone classification
+        if   self.backbone == 'preactresnet':
+             att_pool = F.avg_pool2d(att_t, 2)                                                     #if preactresnet
+        elif self.backbone == 'inception':
+             att_pool = F.interpolate(att_t, size=(299,299) ,mode='bilinear', align_corners=False) #if inseption
+        elif self.backbone == 'resnet':
+             att_pool = F.interpolate(att_t, size=(224,224) ,mode='bilinear', align_corners=False) #if resnet
+        elif self.backbone == 'cvgg':
+             att_pool = att_out                                                                    #if vgg
+        else:
+            assert(False)
+
+        # Classification
+        z, y = self.netclass( att_pool )
+
+        return z, y, att, theta, att_t, g_att, g_ft

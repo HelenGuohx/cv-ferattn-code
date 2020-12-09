@@ -52,7 +52,7 @@ class Dataset( object ):
         image, label = self.data[idx]
         image = np.array(image) 
         image = utility.to_channels(image, self.num_channels)        
-        label = utility.to_one_hot(label, self.numclass)
+        label = utility.to_one_hot(label, self.numclass) #no one-hot haixuanguo
 
         obj = ObjectImageAndLabelTransform( image, label )
         if self.transform: 

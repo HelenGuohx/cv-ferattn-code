@@ -101,8 +101,9 @@ class Logger(object):
             # else: self.plotter.plot(t, '{}_{} (avg)'.format(self.title_name,k), iterepoch, v.favg)
             #
             # self.plotter.plot(t, '{}_{} (val)'.format(self.title_name,k), iterepoch, v.val)
+        if not bsummary:
+            print(strinfo, flush=True )
 
-        print(strinfo, flush=True )
         if bsummary: 
             print(strsummary, flush=True )
 

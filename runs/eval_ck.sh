@@ -6,8 +6,8 @@ PROJECT='../out/attnet'
 FILENAME='result.txt'
 PATHMODEL='models'
 NAMEMODEL='model_best.pth.tar' #'model_best.pth.tar' #'chk000565.pth.tar'
-
-PROJECTNAME='feratt_attnet_ferattention_attloss_adam_ck_dim32_bbpreactresnet_fold0_000'
+BREAL='real'
+PROJECTNAME='feratt_attnet_ferattention_attloss_adam_ck_real_dim32_bbpreactresnet_fold5_000'
 MODEL=$PROJECT/$PROJECTNAME/$PATHMODEL/$NAMEMODEL
 
 python ../eval.py \
@@ -17,3 +17,4 @@ python ../eval.py \
 --namedataset=$NAMEDATASET \
 --filename=$FILENAME \
 --model=$MODEL \
+--breal=$BREAL \

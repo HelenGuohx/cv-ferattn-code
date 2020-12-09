@@ -121,7 +121,7 @@ def split_train_valid(path, filename, test_actor_num):
         f.create_dataset('iclass', data=labels[test_index == 1])
         f.create_dataset('num', data=numclass)
 
-class FERClassicDataset(dataProvide):
+class FERClassicDataset0(dataProvide):
     """
     FER CLASSIC dataset
         CK, JAFFE, BU
@@ -188,7 +188,7 @@ class FERClassicDataset(dataProvide):
     #     return face_rc
 
 
-class FERClassicDataset0( dataProvide ):
+class FERClassicDataset( dataProvide ):
     """
     FER CLASSIC dataset
         CK, JAFFE, BU        
@@ -216,17 +216,18 @@ class FERClassicDataset0( dataProvide ):
 
         self.path = path
         self.filename = filename
-        dir = os.path.join(path, filename + '.mat' )
+        dir = os.path.join(path, filename + '.h5' )
         f = h5py.File(dir)
 
         self.data   = np.array(f["data"])
-        self.points = np.array(f["points"]) #?? empty
-        self.imsize = np.array(f["imsize"])[:,0].astype(int)
-        self.iactor = np.array(f["iactor"])[0,:].astype(int) #??
-        self.labels = np.array(f["iclass"])[0,:].astype(int) - 1
-        self.name   = np.array(f["name"])
-        self.num    = np.array(f["num"])[0,0].astype(int) #?? empty
-        
+        # self.points = np.array(f["points"]) #?? empty
+        self.imsize = np.array(f["imsize"])[0,:].astype(int)
+        self.iactor = np.array(f["iactor"]).astype(int) #??
+        self.labels = np.array(f["iclass"]).astype(int)
+        # self.name   = np.array(f["name"])
+        # self.num    = np.array(f["num"])[0,0].astype(int) #?? empty
+        self.num = len(f["iclass"])
+
         # Emotions class 
         if filename == 'ck' or filename == 'ckp':       
             #classes = ['Neutral - NE', 'Anger - AN', 'Contempt - CO', 'Disgust - DI', 'Fear - FR', 'Happiness - HA', 'Sadness - SA', 'Surprise - SU']
@@ -247,7 +248,7 @@ class FERClassicDataset0( dataProvide ):
         index = np.ones( (self.num,1) )
         actors = np.unique(self.iactor)
         for i in idenselect:
-            index[self.iactor == actors[i]] = 0       
+            index[self.iactor == actors[i]] = 0
         self.indexs = np.where(index == train)[0]        
         self.transform = transform
         
@@ -262,8 +263,7 @@ class FERClassicDataset0( dataProvide ):
         self.labels_org = self.labels
         self.labels = self.labels[ self.indexs ]
         self.classes = [self.classes[ i ] for i in  np.unique( self.labels ) ] 
-        self.labels = self.labels ### - 1 ############ 
-        self.numclass = len(self.classes)   
+        self.numclass = len(self.classes)
         self.index = 0
               
 
@@ -275,7 +275,7 @@ class FERClassicDataset0( dataProvide ):
         if i<0 and i>len(self.index): raise ValueError('Index outside range')
         i = self.indexs[i]
         self.index = i        
-        image = np.array( self.data[i].reshape(self.imsize).transpose(1,0), dtype=np.uint8 )
+        image = np.array( self.data[i].reshape(self.imsize), dtype=np.uint8 )
         label = self.labels_org[ i ]  ### -1  ##########            
         return image, label
 

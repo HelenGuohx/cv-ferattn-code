@@ -8,7 +8,7 @@ from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 
 from torchlib.datasets.fersynthetic  import SecuencialSyntheticFaceDataset, SyntheticFaceDataset
 from torchlib.datasets.factory import FactoryDataset
-from torchlib.attentionnet import AttentionNeuralNet
+from torchlib.attentionnet import AttentionNeuralNet, AttentionGMMNeuralNet
 from torchlib.datasets.datasets import Dataset
 
 import datetime
@@ -20,7 +20,7 @@ def arg_parser():
     parser = ArgumentParser()
     parser.add_argument('data', metavar='DIR',
                         help='path to dataset')
-    parser.add_argument('--databack', metavar='DIR',
+    parser.add_argument('--databack', default=None,
                         help='path to background dataset')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='enables CUDA training')
@@ -52,7 +52,7 @@ def arg_parser():
                         help='path to project (default: ./runs)')
     parser.add_argument('--name', default='exp', type=str,
                         help='name of experiment')
-    parser.add_argument('--resume', default='model_best.pth.tar', type=str, metavar='NAME',
+    parser.add_argument('--resume', default=None, type=str, metavar='NAME',
                         help='name to latest checkpoint (default: none)')
     parser.add_argument('--arch', default='simplenet', type=str,
                         help='architecture')
@@ -82,38 +82,37 @@ def arg_parser():
                         help='balance data')
     parser.add_argument('--backbone', default='preactresnet', type=str,
                         help='backbone for classification and representation')
-    parser.add_argument('--trainiteration', default=1000, type=int, metavar='N',
-                        help='train iteration')
-    parser.add_argument('--testiteration', default=100, type=int, metavar='N',
-                        help='train iteration')
-    parser.add_argument('--breal', action='store_true', help='dataset is real or synthetic')
+    parser.add_argument('--trainiteration', default=None, type=int, metavar='N',
+                        help='train iteration to increase data')
+    parser.add_argument('--testiteration', default=None, type=int, metavar='N',
+                        help='train iteration to increase data')
+    parser.add_argument('--breal', type=str, default='real', help='dataset is real or synthetic')
 
     return parser
 
 
 
 def main(params=None):
-
     # parameters
     parser = arg_parser()
     if params is not None:
-        args = parser.parse_args(params.split())
+        args = parser.parse_args(params)
     else:
         args = parser.parse_args()
     imsize = args.image_size
-    parallel=args.parallel
-    num_classes=args.num_classes
-    num_channels=args.channels
-    dim=args.dim
-    view_freq=1
+    parallel = args.parallel
+    num_classes = args.num_classes
+    num_channels = args.channels
+    dim = args.dim
+    view_freq = 1
     trainiteration = args.trainiteration
     testiteration = args.testiteration
-    breal = args.breal
 
     fname = args.name_method
     fnet = {
-        'attnet':AttentionNeuralNet
-        }
+        'attnet': AttentionNeuralNet,
+        'attgmmnet': AttentionGMMNeuralNet,
+    }
 
     network = fnet[fname](
         patchproject=args.project,
@@ -124,7 +123,7 @@ def main(params=None):
         print_freq=args.print_freq,
         gpu=args.gpu,
         view_freq=view_freq,
-        )
+    )
 
     network.create(
         arch=args.arch,
@@ -138,21 +137,21 @@ def main(params=None):
         pretrained=args.finetuning,
         size_input=imsize,
         num_classes=num_classes,
-        breal=breal
-        )
+        breal=args.breal
+    )
 
     # resume
-    network.resume( os.path.join(network.pathmodels, args.resume ) )
+    if args.resume is not None:
+        network.resume(os.path.join(network.pathmodels, args.resume))
     cudnn.benchmark = True
 
-    kfold=args.kfold
-    nactores=args.nactor
-    idenselect = np.arange(nactores) + kfold*nactores
+    kfold = args.kfold
+    nactores = args.nactor
+    idenselect = np.arange(nactores) + kfold * nactores
 
     # datasets
     # training dataset
-    if breal:
-        imagesize = 64
+    if args.breal == 'real':
         train_data = Dataset(
             data=FactoryDataset.factory(
                 pathname=args.data,
@@ -160,23 +159,22 @@ def main(params=None):
                 subset=FactoryDataset.training,
                 idenselect=idenselect,
                 download=True
-                ),
+            ),
             num_channels=3,
-            transform=get_transforms_det(imagesize),
+            transform=get_transforms_det(args.image_size),
         )
-        # validate dataset
+
         val_data = Dataset(
             data=FactoryDataset.factory(
                 pathname=args.data,
                 name=args.name_dataset,
-                subset=FactoryDataset.training,
+                subset=FactoryDataset.validation,
                 idenselect=idenselect,
                 download=True
-                ),
+            ),
             num_channels=3,
-            transform=get_transforms_det(imagesize),
+            transform=get_transforms_det(args.image_size),
         )
-
     else:
         # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
         train_data = SyntheticFaceDataset(
@@ -186,18 +184,19 @@ def main(params=None):
                 subset=FactoryDataset.training,
                 idenselect=idenselect,
                 download=True
-                ),
+            ),
             pathnameback=args.databack,
             ext='jpg',
             count=trainiteration,
             num_channels=num_channels,
             iluminate=True, angle=30, translation=0.2, warp=0.1, factor=0.2,
-            transform_data=get_transforms_aug( imsize ),
-            transform_image=get_transforms_det( imsize ),
-            )
+            transform_data=get_transforms_aug(imsize),
+            transform_image=get_transforms_det(imsize),
+        )
 
+        # validate dataset
         # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
-        val_data = SecuencialSyntheticFaceDataset(
+        val_data = SyntheticFaceDataset(
             data=FactoryDataset.factory(
                 pathname=args.data,
                 name=args.name_dataset,
@@ -217,56 +216,59 @@ def main(params=None):
     num_train = len(train_data)
     if args.balance:
         labels, counts = np.unique(train_data.labels, return_counts=True)
-        weights = 1/(counts/counts.sum())
-        samples_weights = np.array([ weights[x] for x in train_data.labels ])
-        sampler = WeightedRandomSampler( weights=samples_weights, num_samples=len(samples_weights) , replacement=True )
+        weights = 1 / (counts / counts.sum())
+        samples_weights = np.array([weights[x] for x in train_data.labels])
+        sampler = WeightedRandomSampler(weights=samples_weights, num_samples=len(samples_weights), replacement=True)
     else:
-        sampler = SubsetRandomSampler(np.random.permutation( num_train ) )
+        sampler = SubsetRandomSampler(np.random.permutation(num_train))
 
     train_loader = DataLoader(train_data, batch_size=args.batch_size,
-                              num_workers=args.workers, pin_memory=network.cuda, drop_last=True, sampler=sampler ) #shuffle=True,
+                              num_workers=args.workers, pin_memory=network.cuda, drop_last=True,
+                              sampler=sampler)  # shuffle=True,
 
     val_loader = DataLoader(val_data, batch_size=args.batch_size, shuffle=True,
                             num_workers=args.workers, pin_memory=network.cuda, drop_last=False)
 
+    print(f"Train size: {len(train_data)}, test size: {len(val_data)}")
+
     # print neural net class
-    print('SEG-Torch: {}'.format(datetime.datetime.now()) )
+    print('SEG-Torch: {}'.format(datetime.datetime.now()))
     print(network)
 
     # training neural net
-    network.fit( train_loader, val_loader, args.epochs, args.snapshot)
+    network.fit(train_loader, val_loader, args.epochs, args.snapshot)
 
     print("Optimization Finished!")
     print("DONE!!!")
 
 
-
 if __name__ == '__main__':
-    DATABACK = '~/.datasets/coco'
+    # DATABACK = '~/.datasets/coco'
+    DATABACK=None
     DATA = '~/.datasets'
     NAMEDATASET = 'ck'
     PROJECT = '../out/attnet'
-    EPOCHS = 5
+    EPOCHS = 10
     TRAINITERATION = 288
     TESTITERATION = 20
     BATCHSIZE = 128  # 32, 64, 128, 160, 200, 240
     LEARNING_RATE = 0.0001
     MOMENTUM = 0.5
-    PRINT_FREQ = 100
+    PRINT_FREQ = 1
     WORKERS = 4
-    RESUME = 'model_best.pth.tar'  # chk000000, model_best
+    RESUME = 'chk000004.pth.tar'  # chk000000, model_best
     GPU = 0
     NAMEMETHOD = 'attnet'  # attnet, attstnnet, attgmmnet, attgmmstnnet
     ARCH = 'ferattention'  # ferattention, ferattentiongmm, ferattentionstn
     LOSS = 'attloss'
     OPT = 'adam'
     SCHEDULER = 'fixed'
-    NUMCLASS = 7  # 6, 7, 8
+    NUMCLASS = 8  # 6, 7, 8
     NUMCHANNELS = 3
     DIM = 32
     SNAPSHOT = 10
     IMAGESIZE = 64
-    KFOLD = 0
+    KFOLD = 5
     NACTOR = 10
     BACKBONE = 'preactresnet'  # preactresnet, resnet, cvgg
 
@@ -281,14 +283,15 @@ if __name__ == '__main__':
 
     CUDA_VISIBLE_DEVICES = 0
 
-    args = f"{DATA} \
---databack={DATABACK} \
+    # --trainiteration = {TRAINITERATION} \
+    # --testiteration = {TESTITERATION} \
+    # --databack
+
+    params = f"{DATA} \
 --name-dataset={NAMEDATASET} \
 --project={PROJECT} \
 --name={EXP_NAME} \
 --epochs={EPOCHS} \
---trainiteration={TRAINITERATION} \
---testiteration={TESTITERATION} \
 --kfold={KFOLD} \
 --nactor={NACTOR} \
 --batch-size={BATCHSIZE} \
@@ -301,13 +304,14 @@ if __name__ == '__main__':
 --print-freq={PRINT_FREQ} \
 --snapshot={SNAPSHOT} \
 --workers={WORKERS} \
---resume={RESUME} \
 --gpu={GPU} \
 --loss={LOSS} \
 --opt={OPT} \
 --scheduler={SCHEDULER} \
 --name-method={NAMEMETHOD} \
 --arch={ARCH} \
---finetuning "
+--start-epoch=5 \
+--breal \
+--finetuning ".split()
 
     main()
