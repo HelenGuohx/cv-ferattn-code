@@ -57,6 +57,7 @@ def save_checkpoint(state, is_best, path, filename='checkpoint.pth.tar'):
     filename = os.path.join(path, filename)
     torch.save(state, filename)
     if is_best:
+        print("save model_best.pth.tar ")
         shutil.copyfile(filename, os.path.join(path, 'model_best.pth.tar'))
 
 def resumecheckpoint(resume, net, optimizer):

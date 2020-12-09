@@ -121,6 +121,8 @@ class FERPDataset( dataProvide ):
         self.load_folders()
         self.labels =  np.array( [ np.argmax(self.data[i][1]) for i in range( len(self.data) )  ])
 
+        self.numclass = len(np.unique(self.labels))
+
         # not used
         self.training_mode   = 'majority' 
         self.transform = transform     
@@ -136,8 +138,10 @@ class FERPDataset( dataProvide ):
         self.index = idx
         pathname = self.data[idx][0]
         image = np.array(self._loadimage(pathname), dtype=np.uint8)
-        label = np.array(self.data[idx][1], dtype=np.float32)
-        label = np.argmax(label)
+        # label = np.array(self.data[idx][1], dtype=np.float32)
+        # label = np.argmax(label)
+        label = self.labels[idx]
+
         return image, label
 
     def getroi(self):
@@ -161,7 +165,7 @@ class FERPDataset( dataProvide ):
                     
                     # load the image
                     image_path = os.path.join(folder_path, row[0])
-                    # face rectangle 
+                    # face rectangle
                     box = list(map(int, row[1][1:-1].split(',')))
                     face_rc = Rect(box)
 

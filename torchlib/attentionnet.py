@@ -410,7 +410,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
 
 
                 # fit (forward)
-                print("x_img size", x_img.size())
+                # print("x_img size", x_img.size())
                 y_lab_hat, att, fmap, srf  = self.net( x_img )
 
                 # measure accuracy and record loss

@@ -249,7 +249,7 @@ if __name__ == '__main__':
     # DATABACK = '~/.datasets/coco'
     DATABACK=None
     DATA = '~/.datasets'
-    NAMEDATASET = 'ck'
+    NAMEDATASET = 'ferp'
     PROJECT = '../out/attnet'
     EPOCHS = 5
     TRAINITERATION = 288
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     BATCHSIZE = 128  # 32, 64, 128, 160, 200, 240
     LEARNING_RATE = 0.0001
     MOMENTUM = 0.5
-    PRINT_FREQ = 1
+    PRINT_FREQ = 40
     WORKERS = 4
     RESUME = 'chk000004.pth.tar'  # chk000000, model_best
     GPU = 0
@@ -275,6 +275,7 @@ if __name__ == '__main__':
     NACTOR = 10
     BACKBONE = 'preactresnet'  # preactresnet, resnet, cvgg
     BREAL = 'real'
+    NUM_FILTERS = 32
 
     EXP_NAME = 'feratt_'+ NAMEMETHOD + \
     '_' + ARCH + \
@@ -315,7 +316,7 @@ if __name__ == '__main__':
 --name-method={NAMEMETHOD} \
 --arch={ARCH} \
 --breal={BREAL} \
---num_filters=16 \
+--num_filters={NUM_FILTERS} \
  --finetuning ".split()
 
     main()

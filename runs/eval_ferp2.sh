@@ -1,13 +1,13 @@
 #!/bin/bash
 
 PATHDATASET='~/.datasets/'
-NAMEDATASET='ck' #bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
+NAMEDATASET='ferp' #bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
 NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
 PROJECT="../out/$NAMEMETHOD"
 FILENAME='result.txt'
 PATHMODEL='models'
 NAMEMODEL='model_best.pth.tar' #'model_best.pth.tar' #'chk000565.pth.tar'
-BREAL='synthetic'
+BREAL='real' #real, synthetic
 PROJECTNAME=$1
 MODEL=$PROJECT/$PROJECTNAME/$PATHMODEL/$NAMEMODEL
 

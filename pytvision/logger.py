@@ -88,11 +88,11 @@ class Logger(object):
 
         strinfo  = '|{}: epoch:{:4d}| batch: {:4d}/{:4d} '.format(self.title_name, epoch, i, num)
         strinfo += '|time: {:8.4f} '.format(time.val)  
-        strsummary = '\nValidation:\n'       
+        strsummary = '\nValidation(Average) :\n'
 
         for t,k,v in self._get():
             strinfo += '|{}: {:8.4f} '.format( k, v.val )
-            strsummary += ' * {}: {:.3f} ({:.3f})\n'.format(k, v.val, v.avg )
+            strsummary += ' * {}: {:.3f} ({:.3f})\n'.format(k, v.avg, v.val )
 
             if not bplotter: 
                 continue 
