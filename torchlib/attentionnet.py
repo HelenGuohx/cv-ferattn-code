@@ -69,7 +69,9 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         pretrained=False,
         size_input=388,
         num_classes=8,
-        backbone='preactresnet'
+        backbone='preactresnet',
+        alpha=2,
+        beta=2
         ):
         """
         Create
@@ -99,6 +101,8 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
             pretrained,
             cfg_opt=cfg_opt,
             cfg_scheduler=cfg_scheduler,
+            alpha=alpha,
+            beta=beta
         )
 
         self.size_input = size_input
@@ -255,7 +259,9 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
         size_input=388,
         num_classes=8,
         backbone='preactresnet',
-        breal=True
+        breal=True,
+        alpha=2,
+        beta=2
         ):
         """
         Create
@@ -359,7 +365,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             if i % self.print_freq == 0:
                 self.logger_train.logger( epoch, epoch + float(i+1)/len(data_loader), i, len(data_loader), batch_time,   )
 
-    def evaluate(self, data_loader, epoch=0):
+    def evaluate(self, data_loader, epoch=0, alpha=2, beta=2):
 
         # reset loader
         self.logger_val.reset()
@@ -486,7 +492,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
         return y_lab_hat, att, fmap, srf
 
 
-    def _create_loss(self, loss):
+    def _create_loss(self, loss, alpha=2, beta=2):
 
         # create loss
         if loss == 'attloss':
@@ -802,13 +808,13 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
         return z, y_lab_hat, att, fmap, srf
 
 
-    def _create_loss(self, loss):
+    def _create_loss(self, loss, alpha=2, beta=2):
 
         # create loss
         if loss == 'attloss':
             self.criterion_bce = nn.CrossEntropyLoss().cuda()
             self.criterion_att = nloss.Attloss()
-            self.criterion_gmm = nloss.DGMMLoss( self.num_classes, cuda=self.cuda )
+            self.criterion_gmm = nloss.DGMMLoss( self.num_classes, cuda=self.cuda, alpha=alpha, beta=beta)
         else:
             assert(False)
 
