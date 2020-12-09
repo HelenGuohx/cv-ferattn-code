@@ -69,7 +69,8 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         pretrained=False,
         size_input=388,
         num_classes=8,
-        backbone='preactresnet'
+        backbone='preactresnet',
+        num_filters=32
         ):
         """
         Create
@@ -85,6 +86,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         cfg_opt={ 'momentum':momentum, 'weight_decay':weight_decay }
         #cfg_scheduler={ 'step_size':100, 'gamma':0.1  }
         cfg_scheduler={ 'mode':'min', 'patience':10  }
+        cfg_model = {'num_filters': num_filters}
 
         self.num_classes = num_classes
 
@@ -99,13 +101,15 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
             pretrained,
             cfg_opt=cfg_opt,
             cfg_scheduler=cfg_scheduler,
+            cfg_model=cfg_model,
         )
 
         self.size_input = size_input
         self.backbone = backbone
+        self.num_filters = num_filters
 
         self.accuracy = nloss.Accuracy()
-        self.topk     = nloss.TopkAccuracy()
+        self.topk     = nloss.TopkAccuracy(topk=(1,3,6))
         self.gmm      = nloss.GMMAccuracy( classes=num_classes, cuda=self.cuda  )
         self.dice     = nloss.Dice()
 
@@ -147,7 +151,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
             y_lab_hat = F.softmax( y_lab_hat, dim=1 )
         return z, y_lab_hat, att, theta, att_t, fmap, srf
 
-    def _create_model(self, arch, num_output_channels, num_input_channels, pretrained):
+    def _create_model(self, arch, num_output_channels, num_input_channels, pretrained, num_filters):
         """
         Create model
             -arch (string): select architecture
@@ -161,12 +165,15 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         #--------------------------------------------------------------------------------------------
         # select architecture
         #--------------------------------------------------------------------------------------------
-        kw = {'dim': num_output_channels, 'num_classes': self.num_classes, 'num_channels': num_input_channels, 'pretrained': pretrained}
+        kw = {'dim': num_output_channels, 'num_classes': self.num_classes, 'num_channels': num_input_channels, 'pretrained': pretrained,
+              'num_filters': num_filters}
+        print("kw", kw)
         self.net = nnmodels.__dict__[arch](**kw)
 
         self.s_arch = arch
         self.num_output_channels = num_output_channels
         self.num_input_channels = num_input_channels
+        self.num_filters = num_filters
 
         if self.cuda == True:
             self.net.cuda()
@@ -191,6 +198,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
                 'state_dict': net.state_dict(),
                 'prec': prec,
                 'optimizer' : self.optimizer.state_dict(),
+                'num_filters':self.num_filters,
             },
             is_best,
             self.pathmodels,
@@ -204,7 +212,12 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
                 print("=> loading checkpoint '{}'".format(pathnamemodel))
                 checkpoint = torch.load( pathnamemodel ) if self.cuda else torch.load( pathnamemodel, map_location=lambda storage, loc: storage )
                 self.num_classes = checkpoint['num_classes']
-                self._create_model(checkpoint['arch'], checkpoint['num_output_channels'], checkpoint['num_input_channels'], False )
+                self._create_model(checkpoint['arch'],
+                                   checkpoint['num_output_channels'],
+                                   checkpoint['num_input_channels'],
+                                   False,
+                                   checkpoint['num_filters'],
+                                    )
                 self.size_input = checkpoint['imsize']
                 self.net.load_state_dict( checkpoint['state_dict'] )
                 print("=> loaded checkpoint for {} arch!".format(checkpoint['arch']))
@@ -255,6 +268,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
         size_input=388,
         num_classes=8,
         backbone='preactresnet',
+        num_filters=32,
         breal=True
         ):
         """
@@ -283,7 +297,8 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             pretrained,
             size_input,
             num_classes,
-            backbone
+            backbone,
+            num_filters,
         )
 
         self.logger_train = Logger( 'Train', ['loss', 'loss_bce', 'loss_att' ], [ 'topk'], self.plotter  )
@@ -395,6 +410,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
 
 
                 # fit (forward)
+                print("x_img size", x_img.size())
                 y_lab_hat, att, fmap, srf  = self.net( x_img )
 
                 # measure accuracy and record loss
@@ -689,20 +705,31 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
         self.net.eval()
         with torch.no_grad():
             end = time.time()
-            for i, (x_org, x_img, y_mask, meta) in enumerate(data_loader):
+            for i, sample in enumerate(data_loader):
 
                 # get data (image, label)
+                if self.breal == 'real':
+                    x_img, y_lab = sample["image"], sample["label"]
+                    y_lab = y_lab.argmax(dim=1)
+
+                    if self.cuda:
+                        x_img = x_img.cuda()
+                        y_lab = y_lab.cuda()
+                    x_org = x_img.clone().detach()
+                else:
+                    x_org, x_img, y_mask, meta = sample
+
+                    y_lab = meta[:, 0]
+                    y_theta = meta[:, 1:].view(-1, 2, 3)
+
+                    if self.cuda:
+                        x_org = x_org.cuda()
+                        x_img = x_img.cuda()
+                        y_mask = y_mask.cuda()
+                        y_lab = y_lab.cuda()
+                        y_theta = y_theta.cuda()
+
                 batch_size = x_img.shape[0]
-
-                y_lab = meta[:,0]
-                y_theta   = meta[:,1:].view(-1, 2, 3)
-
-                if self.cuda:
-                    x_org   = x_org.cuda()
-                    x_img   = x_img.cuda()
-                    y_mask  = y_mask.cuda()
-                    y_lab   = y_lab.cuda()
-                    y_theta = y_theta.cuda()
 
                 # fit (forward)
                 z, y_lab_hat, att, fmap, srf  = self.net( x_img )
@@ -710,7 +737,7 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
                 # measure accuracy and record loss
                 loss_bce  = self.criterion_bce( y_lab_hat, y_lab.long() )
                 loss_gmm  = self.criterion_gmm( z, y_lab )
-                loss_att  = self.criterion_att( x_org, y_mask, att  )
+                loss_att  = self.criterion_att( x_org, att  )
                 loss      = loss_bce + loss_gmm + loss_att + 0.0*z.norm(2)
 
                 topk      = self.topk( y_lab_hat, y_lab.long() )
@@ -749,21 +776,21 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
             )
 
         #vizual_freq
-        if epoch % self.view_freq == 0:
-
-            att   = att[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-            srf   = srf[0,:,:,:].permute( 1,2,0 ).sum(dim=2)
-            fmap  = fmap[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-
-            self.visheatmap.show('Image', x_img.data.cpu()[0].numpy()[0,:,:])
-            self.visheatmap.show('Image Attention',att.cpu().numpy().astype(np.float32) )
-            self.visheatmap.show('Feature Map',srf.cpu().numpy().astype(np.float32) )
-            self.visheatmap.show('Attention Map',fmap.cpu().numpy().astype(np.float32) )
+        # if epoch % self.view_freq == 0:
+        #
+        #     att   = att[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
+        #     srf   = srf[0,:,:,:].permute( 1,2,0 ).sum(dim=2)
+        #     fmap  = fmap[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
+        #
+        #     self.visheatmap.show('Image', x_img.data.cpu()[0].numpy()[0,:,:])
+        #     self.visheatmap.show('Image Attention',att.cpu().numpy().astype(np.float32) )
+        #     self.visheatmap.show('Feature Map',srf.cpu().numpy().astype(np.float32) )
+        #     self.visheatmap.show('Attention Map',fmap.cpu().numpy().astype(np.float32) )
 
         return acc
 
 
-    def representation( self, dataloader, breal=True ):
+    def representation( self, dataloader, breal ):
         Y_labs = []
         Y_lab_hats = []
         Zs = []
@@ -771,7 +798,7 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
         with torch.no_grad():
             for i_batch, sample in enumerate( tqdm(dataloader) ):
 
-                if breal:
+                if breal == 'real':
                     x_img, y_lab = sample['image'], sample['label']
                     y_lab = y_lab.argmax(dim=1)
                 else:

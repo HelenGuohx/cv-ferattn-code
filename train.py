@@ -87,6 +87,7 @@ def arg_parser():
     parser.add_argument('--testiteration', default=None, type=int, metavar='N',
                         help='train iteration to increase data')
     parser.add_argument('--breal', type=str, default='real', help='dataset is real or synthetic')
+    parser.add_argument('--num_filters', type=int, default=32, help='reconstruction size')
 
     return parser
 
@@ -103,6 +104,7 @@ def main(params=None):
     parallel = args.parallel
     num_classes = args.num_classes
     num_channels = args.channels
+    num_filters = args.num_filters
     dim = args.dim
     view_freq = 1
     trainiteration = args.trainiteration
@@ -137,6 +139,7 @@ def main(params=None):
         pretrained=args.finetuning,
         size_input=imsize,
         num_classes=num_classes,
+        num_filters=num_filters,
         breal=args.breal
     )
 
@@ -248,7 +251,7 @@ if __name__ == '__main__':
     DATA = '~/.datasets'
     NAMEDATASET = 'ck'
     PROJECT = '../out/attnet'
-    EPOCHS = 10
+    EPOCHS = 5
     TRAINITERATION = 288
     TESTITERATION = 20
     BATCHSIZE = 128  # 32, 64, 128, 160, 200, 240
@@ -271,6 +274,7 @@ if __name__ == '__main__':
     KFOLD = 5
     NACTOR = 10
     BACKBONE = 'preactresnet'  # preactresnet, resnet, cvgg
+    BREAL = 'real'
 
     EXP_NAME = 'feratt_'+ NAMEMETHOD + \
     '_' + ARCH + \
@@ -310,8 +314,8 @@ if __name__ == '__main__':
 --scheduler={SCHEDULER} \
 --name-method={NAMEMETHOD} \
 --arch={ARCH} \
---start-epoch=5 \
---breal \
---finetuning ".split()
+--breal={BREAL} \
+--num_filters=16 \
+ --finetuning ".split()
 
     main()

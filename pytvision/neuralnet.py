@@ -186,7 +186,7 @@ class NeuralNetAbstract(object):
         pass
 
 
-    def _create_model(self, arch, num_output_channels, num_input_channels, pretrained):
+    def _create_model(self, arch, num_output_channels, num_input_channels, pretrained, **kargs):
         """
         Create model
         Args:

@@ -23,7 +23,7 @@ from torchlib.datasets.factory  import FactoryDataset
 from torchlib.datasets.datasets import Dataset
 from torchlib.datasets.fersynthetic  import SyntheticFaceDataset
 
-from torchlib.attentionnet import AttentionNeuralNet
+from torchlib.attentionnet import AttentionNeuralNet, AttentionGMMNeuralNet
 from aug import get_transforms_aug, get_transforms_det
 
 
@@ -50,6 +50,7 @@ def arg_parser():
     parser.add_argument('--filename',    metavar='S',    help='name of the file output')
     parser.add_argument('--model',       metavar='S',    help='filename model')
     parser.add_argument('--breal', type=str, default='real', help='dataset is real or synthetic')
+    parser.add_argument('--name-method', type=str, default='attnet', help='which neural network')
 
     return parser
 
@@ -70,6 +71,13 @@ def main(params=None):
     pathproject     = os.path.join( project, projectname )
     namedataset     = args.namedataset
     breal           = args.breal
+    name_method      = args.name_method
+
+    fname = args.name_method
+    fnet = {
+        'attnet': AttentionNeuralNet,
+        'attgmmnet': AttentionGMMNeuralNet,
+    }
     
     no_cuda=False
     parallel=False
@@ -96,7 +104,7 @@ def main(params=None):
     
         # Load models
         print('>> Load model ...')
-        network = AttentionNeuralNet(
+        network = fnet[fname](
             patchproject=project,
             nameproject=projectname,
             no_cuda=no_cuda,
@@ -110,8 +118,8 @@ def main(params=None):
         # load model
         if network.load( pathnamemodel ) is not True:
             print('>>Error!!! load model')
-            assert(False)  
-    
+            assert(False)
+
 
         size_input = network.size_input
         for i, experiment in enumerate(experiments):
@@ -165,20 +173,31 @@ def main(params=None):
             print("size of data:", len(dataset))
             print("num of batches", len(dataloader))
 
-            # representation 
-            Y_labs, Y_lab_hats= network.representation( dataloader, breal )
-            print("Y_lab_hats shape: {}, y_labs shape: {}".format(Y_lab_hats.shape, Y_labs.shape))
-            
-            reppathname = os.path.join( pathproject, 'rep_{}_{}_{}.pth'.format(namedataset, subset, breal ) )
-            torch.save( { 'Yh':Y_lab_hats, 'Y':Y_labs }, reppathname )
-            print( 'save representation ...' )
+            # representation
+            if name_method == 'attgmmnet':
+                # representation
+                Y_labs, Y_lab_hats, Zs = network.representation(dataloader, breal)
+                print(Y_lab_hats.shape, Zs.shape, Y_labs.shape)
+
+                reppathname = os.path.join(pathproject, 'rep_{}_{}_{}.pth'.format(namedataset, subset,
+                                                                                     breal))
+                torch.save({'Yh': Y_lab_hats, 'Z': Zs, 'Y': Y_labs}, reppathname)
+                print('save representation ...', reppathname)
+
+            else:
+                Y_labs, Y_lab_hats= network.representation( dataloader, breal )
+                print("Y_lab_hats shape: {}, y_labs shape: {}".format(Y_lab_hats.shape, Y_labs.shape))
+
+                reppathname = os.path.join( pathproject, 'rep_{}_{}_{}.pth'.format(namedataset, subset, breal ) )
+                torch.save( { 'Yh':Y_lab_hats, 'Y':Y_labs }, reppathname )
+                print( 'save representation ...', reppathname )
             
 
     
     if bclassification_test:
 
         tuplas=[]
-        print('|Num\t|Acc\t|Prec\t|Rec\t|F1\t|Set\t|Type\t')
+        print('|Num\t|Acc\t|Prec\t|Rec\t|F1\t|Set\t|Type\t|Accuracy_type\t')
         for  i, experiment in enumerate(experiments):   
 
             name_dataset = experiment['name']
@@ -187,7 +206,7 @@ def main(params=None):
             real = breal
 
             rep_pathname = os.path.join( pathproject, 'rep_{}_{}_{}.pth'.format(
-                namedataset, subset, real) )
+                namedataset, subset, breal) )
 
             data_emb = torch.load(rep_pathname)
             Yto = data_emb['Y']
@@ -202,11 +221,46 @@ def main(params=None):
             f1_score = 2*precision*recall/(precision+recall)
 
             
-            print( '|{}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{}\t|{}\t'.format(
+            print( '|{}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{}\t|{}\t|{}\t'.format(
                 i, 
                 acc, precision, recall, f1_score,
-                subset, real
+                subset, real, 'topk'
             ))
+
+            if name_method == 'attgmmnet':
+                y = data_emb['Y']
+                x = data_emb['Z']
+
+                classes = np.unique(y)
+                numclasses = len(classes)
+
+                num = x.shape[0]
+                dim = x.shape[1]
+
+                Xmu = np.zeros((num, numclasses))
+                yh = np.zeros((num,)).astype(int)
+
+                ## Ecuation
+                for idx, c in enumerate(classes):
+                    index = y == int(c)
+                    if index.sum() == 0: continue
+                    xc = x[index, ...]
+                    muc = xc.mean(axis=0)
+                    Xmu[:, idx] = np.sum((x - muc) ** 2, axis=1)
+                    yh[index] = idx
+
+                yhat = np.argmin(Xmu, 1).astype(int)
+
+                acc = metrics.accuracy_score(y, yhat)
+                precision = metrics.precision_score(y, yhat, average='macro')
+                recall = metrics.recall_score(y, yhat, average='macro')
+                f1_score = 2 * precision * recall / (precision + recall)
+
+                print('|{}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{}\t|{}\t|{}\t'.format(
+                    i,
+                    acc, precision, recall, f1_score,
+                    subset, real, 'gmm'
+                ))
 
 
             #|Name|Dataset|Cls|Acc| ...
@@ -308,21 +362,24 @@ def main(params=None):
 if __name__ == '__main__':
     PATHDATASET = '~/.datasets/'
     NAMEDATASET = 'ck'  # bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
-    PROJECT = '../out/attnet'
+    NAMEMETHOD = 'attnet'  # attnet, attstnnet, attgmmnet, attgmmstnnet
+    PROJECT = f"../out/{NAMEMETHOD}"
     # PATHNAMEOUT = '../out/attnet'
     FILENAME = 'result.txt'
     PATHMODEL = 'models'
     NAMEMODEL = 'model_best.pth.tar'  # 'model_best.pth.tar' #'chk000565.pth.tar'
-
-    EXP_NAME = 'feratt_attnet_ferattention_attloss_adam_ck_dim32_bbpreactresnet_fold0_000'
+    BREAL = 'synthetic'
+    EXP_NAME = 'feratt_attnet_ferattention_attloss_adam_ck_real_filter16_dim32_bbpreactresnet_fold5_000'
     MODEL = f'{PROJECT}/{EXP_NAME}/{PATHMODEL}/{NAMEMODEL}'
 
    # / out / attnet / feratt_attnet_ferattention_attloss_adam_ck_dim32_bbpreactresnet_fold0_000 / models/model_best.pth.tar
-    args = f"--project={PROJECT} \
+    params = f"--project={PROJECT} \
 --projectname={EXP_NAME} \
 --pathdataset={PATHDATASET} \
 --namedataset={NAMEDATASET} \
 --filename={FILENAME} \
+--breal={BREAL} \
+--name-method={NAMEMETHOD} \
 --model={MODEL}".split()
 
     main()

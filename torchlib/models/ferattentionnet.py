@@ -69,6 +69,7 @@ def normalize_layer(x):
     return x
 
 def conv3x3(_in, _out):
+    # print("int, out", _in, _out)
     return nn.Conv2d(_in, _out, kernel_size=3, stride=1, padding=1)
 
 class ConvRelu(nn.Module):
@@ -270,6 +271,8 @@ class FERAttentionNet(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.num_filters = num_filters
+
+        print("num filter in FERAttentionNet", num_filters)
 
         # Attention module
         # TODO March 01, 2019: Include select backbone model attention

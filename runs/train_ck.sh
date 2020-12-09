@@ -4,19 +4,19 @@
 DATABACK='~/.datasets/coco'
 DATA='~/.datasets'
 NAMEDATASET='ck'
+NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
+ARCH='ferattention' #ferattention, ferattentiongmm, ferattentionstn
 PROJECT='../out/attnet'
 EPOCHS=60
 TRAINITERATION=1000
 TESTITERATION=100
-BATCHSIZE=200 #32, 64, 128, 160, 200, 240
+BATCHSIZE=128 #32, 64, 128, 160, 200, 240
 LEARNING_RATE=0.0001
 MOMENTUM=0.5
 PRINT_FREQ=100
 WORKERS=4
 RESUME='model_best.pth.tar' #chk000000, model_best
 GPU=0
-NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
-ARCH='ferattention' #ferattention, ferattentiongmm, ferattentionstn
 LOSS='attloss'
 OPT='adam'
 SCHEDULER='fixed'
@@ -28,8 +28,9 @@ IMAGESIZE=64
 KFOLD=5
 NACTOR=10
 BACKBONE='preactresnet' #preactresnet, resnet, cvgg
-BREAL='real' #real, synthetic
-EXP_NAME='feratt_'$NAMEMETHOD'_'$ARCH'_'$LOSS'_'$OPT'_'$NAMEDATASET'_'$BREAL'_dim'$DIM'_bb'$BACKBONE'_fold'$KFOLD'_000'
+NUM_FILTERS=$1
+BREAL='synthetic' #real, synthetic
+EXP_NAME='feratt_'$NAMEMETHOD'_'$ARCH'_'$LOSS'_'$OPT'_'$NAMEDATASET'_'$BREAL'_filter'$NUM_FILTERS'_dim'$DIM'_bb'$BACKBONE'_fold'$KFOLD'_000'
 
 rm -rf $PROJECT/$EXP_NAME/$EXP_NAME.log
 rm -rf $PROJECT/$EXP_NAME/
@@ -59,7 +60,6 @@ $DATA \
 --print-freq=$PRINT_FREQ \
 --snapshot=$SNAPSHOT \
 --workers=$WORKERS \
---resume=$RESUME \
 --gpu=$GPU \
 --loss=$LOSS \
 --opt=$OPT \
@@ -68,6 +68,7 @@ $DATA \
 --arch=$ARCH \
 --finetuning \
 --breal=$BREAL \
+--num_filters=$NUM_FILTERS \
 2>&1 | tee -a $PROJECT/$EXP_NAME/$EXP_NAME.log \
 
 #--parallel \

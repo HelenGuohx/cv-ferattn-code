@@ -387,6 +387,10 @@ class DGMMLoss(nn.Module):
 
 
 class GMMAccuracy(nn.Module):
+    """
+    calculate the mean square error of |z - mu(c)| for class c
+    each image belongs to the class that has the smallest mean square error
+    """
 
     def __init__(self, classes=10, cuda=False):
         super(GMMAccuracy, self).__init__()
