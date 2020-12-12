@@ -22,7 +22,6 @@ for file in files:
         if trigger and ':' in line:
             # We are now at the end of a function declaration. Add the bad line
             print(indent+badLine, file=temp)
-            trigger = False
 
     src.close()
     temp.close()
