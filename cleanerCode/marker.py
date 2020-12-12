@@ -15,7 +15,7 @@ for file in files:
     indent = ''
     for line in src:
         print(line, file=temp, end='')
-        if 'def' in line:
+        if 'def ' in line:
             # We are starting a function declaration
             trigger = True
             indent = line.split('d')[0]
