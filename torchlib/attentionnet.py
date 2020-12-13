@@ -109,7 +109,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         self.num_filters = num_filters
 
         self.accuracy = nloss.Accuracy()
-        self.topk     = nloss.TopkAccuracy(topk=(1,3,6))
+        self.topk     = nloss.TopkAccuracy() #topk=(1,3,6)
         self.gmm      = nloss.GMMAccuracy( classes=num_classes, cuda=self.cuda  )
         self.dice     = nloss.Dice()
 
@@ -151,7 +151,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
             y_lab_hat = F.softmax( y_lab_hat, dim=1 )
         return z, y_lab_hat, att, theta, att_t, fmap, srf
 
-    def _create_model(self, arch, num_output_channels, num_input_channels, pretrained, num_filters):
+    def _create_model(self, arch, num_output_channels, num_input_channels, pretrained, **kwargs):
         """
         Create model
             -arch (string): select architecture
@@ -165,6 +165,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         #--------------------------------------------------------------------------------------------
         # select architecture
         #--------------------------------------------------------------------------------------------
+        num_filters = kwargs.get("num_filters", 32)
         kw = {'dim': num_output_channels, 'num_classes': self.num_classes, 'num_channels': num_input_channels, 'pretrained': pretrained,
               'num_filters': num_filters}
         print("kw", kw)
@@ -175,11 +176,10 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         self.num_input_channels = num_input_channels
         self.num_filters = num_filters
 
-        if self.cuda == True:
+        if self.cuda:
             self.net.cuda()
-        if self.parallel == True and self.cuda == True:
+        if self.parallel and self.cuda:
             self.net = nn.DataParallel(self.net, device_ids= range( torch.cuda.device_count() ))
-
 
     def save(self, epoch, prec, is_best=False, filename='checkpoint.pth.tar'):
         """
@@ -216,7 +216,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
                                    checkpoint['num_output_channels'],
                                    checkpoint['num_input_channels'],
                                    False,
-                                   checkpoint['num_filters'],
+                                   num_filters=checkpoint['num_filters'],
                                     )
                 self.size_input = checkpoint['imsize']
                 self.net.load_state_dict( checkpoint['state_dict'] )
@@ -588,6 +588,7 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
         num_classes=8,
         backbone='preactresnet',
         breal='real',
+        num_filters=32,
         ):
         """
         Create
@@ -615,7 +616,8 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
             pretrained,
             size_input,
             num_classes,
-            backbone
+            backbone,
+            num_filters,
         )
 
         self.logger_train = Logger( 'Train', ['loss', 'loss_gmm', 'loss_bce', 'loss_att' ], [ 'topk', 'gmm'], self.plotter  )

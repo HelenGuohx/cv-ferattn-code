@@ -24,6 +24,8 @@ from torchlib.datasets.datasets import Dataset
 from torchlib.datasets.fersynthetic  import SyntheticFaceDataset
 
 from torchlib.attentionnet import AttentionNeuralNet, AttentionGMMNeuralNet
+from torchlib.classnet import ClassNeuralNet
+
 from aug import get_transforms_aug, get_transforms_det
 
 
@@ -51,6 +53,7 @@ def arg_parser():
     parser.add_argument('--model',       metavar='S',    help='filename model')
     parser.add_argument('--breal', type=str, default='real', help='dataset is real or synthetic')
     parser.add_argument('--name-method', type=str, default='attnet', help='which neural network')
+    parser.add_argument("--iteration", type=int, default='2000', help="iteration for synthetic images")
 
     return parser
 
@@ -72,11 +75,14 @@ def main(params=None):
     namedataset     = args.namedataset
     breal           = args.breal
     name_method      = args.name_method
+    iteration       = args.iteration
 
     fname = args.name_method
     fnet = {
         'attnet': AttentionNeuralNet,
         'attgmmnet': AttentionGMMNeuralNet,
+        'classnet': ClassNeuralNet,
+
     }
     
     no_cuda=False
@@ -88,9 +94,10 @@ def main(params=None):
     brecover_test=False
     
     imagesize=64
-    idenselect=np.arange(10)
-    
-    
+    kfold = 5
+    nactores = 10
+    idenselect = np.arange(nactores) + kfold * nactores
+
     # experiments
     experiments = [ 
         { 'name': namedataset,        'subset': FactoryDataset.training,   'status': breal },
@@ -158,14 +165,14 @@ def main(params=None):
                         ),
                     pathnameback='~/.datasets/coco', 
                     ext='jpg',
-                    count=2000,
+                    count=iteration,
                     num_channels=3,
                     iluminate=True, angle=45, translation=0.3, warp=0.2, factor=0.2,
                     transform_data=get_transforms_aug( imagesize ),
                     transform_image=get_transforms_det( imagesize ),
                     )
 
-            dataloader = DataLoader(dataset, batch_size=100, shuffle=False, num_workers=10 )
+            dataloader = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=10 )
             
             print("\ndataset:", breal)
             print("Subset:", subset)
@@ -226,6 +233,12 @@ def main(params=None):
                 acc, precision, recall, f1_score,
                 subset, real, 'topk'
             ))
+
+            # cm = metrics.confusion_matrix(y, yhat)
+            # cm_display = metrics.ConfusionMatrixDisplay(cm, display_labels=np.arange(8)).plot()
+            # print(cm_display)
+            print(f'save y and yhat to {real}_{subset}_y.npz')
+            np.savez(os.path.join(pathproject, f'{real}_{subset}_y.npz'), name1=yhat, name2=y)
 
             if name_method == 'attgmmnet':
                 y = data_emb['Y']

@@ -158,7 +158,7 @@ class Generator(object):
         
         mask = ( image < 1.0 ).astype( np.uint8 )
 
-        # ???
+        #
         dz = 50*rn.random()
         dx = int( rn.random() * ( (bk_w + dz) - im_w ) )
         dy = int( rn.random() * ( (bk_h + dz) - im_h ) )

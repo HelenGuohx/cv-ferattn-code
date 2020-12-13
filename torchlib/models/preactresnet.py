@@ -69,7 +69,7 @@ class PreActResNet(nn.Module):
         self.in_planes = initial_channels
         self.num_classes = num_classes
         self.num_channels=num_channels
-        self.size_input=32
+        # self.size_input=32
 
         self.conv1 = nn.Conv2d(num_channels, initial_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.layer1 = self._make_layer(block, initial_channels, num_blocks[0], stride=1)

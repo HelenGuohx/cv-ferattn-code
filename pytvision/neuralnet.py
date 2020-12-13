@@ -140,7 +140,7 @@ class NeuralNetAbstract(object):
     def inference(self, image):        
         pass
 
-    def representation(self, data_loader):
+    def representation(self, data_loader, **kwargs):
         pass
     
     def fit( self, train_loader, val_loader, epochs=100, snapshot=10):

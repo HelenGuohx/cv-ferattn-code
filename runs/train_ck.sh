@@ -4,9 +4,9 @@
 DATABACK='~/.datasets/coco'
 DATA='~/.datasets'
 NAMEDATASET='ck'
-NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
-ARCH='ferattention' #ferattention, ferattentiongmm, ferattentionstn
-PROJECT='../out/attnet'
+NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet, classnet
+ARCH='ferattention' #ferattention, ferattentiongmm, ferattentionstn, preactresnet18
+PROJECT='../out/'$NAMEMETHOD
 EPOCHS=60
 TRAINITERATION=1000
 TESTITERATION=100
@@ -28,9 +28,10 @@ IMAGESIZE=64
 KFOLD=5
 NACTOR=10
 BACKBONE='preactresnet' #preactresnet, resnet, cvgg
-NUM_FILTERS=$1
+NUM_FILTERS=32
 BREAL='synthetic' #real, synthetic
-EXP_NAME='feratt_'$NAMEMETHOD'_'$ARCH'_'$LOSS'_'$OPT'_'$NAMEDATASET'_'$BREAL'_filter'$NUM_FILTERS'_dim'$DIM'_bb'$BACKBONE'_fold'$KFOLD'_000'
+POOLSIZE=2 #2,4,8,16
+EXP_NAME='feratt_'$NAMEMETHOD'_'$ARCH'_'$LOSS'_'$OPT'_'$NAMEDATASET'_'$BREAL'_filter'$NUM_FILTERS'_pool_size'$POOLSIZE'_dim'$DIM'_bb'$BACKBONE'_fold'$KFOLD'_000'
 
 rm -rf $PROJECT/$EXP_NAME/$EXP_NAME.log
 rm -rf $PROJECT/$EXP_NAME/

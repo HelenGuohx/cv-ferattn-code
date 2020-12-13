@@ -6,9 +6,7 @@ import numpy as np
 import cv2
 import random
 
-import torch
 import torch.utils.data as data
-import torch.nn.functional
 
 
 from ..transforms.ferrender import Generator
@@ -96,6 +94,8 @@ class SyntheticFaceDataset( data.Dataset ):
         # read background 
         if self.bbackimage:
             idxk = random.randint(1, len(self.databack) - 1 )
+            # print("idxk", idxk)
+
             back = self.databack[ idxk  ] 
             back = F.resize_image(back, 640, 1024, resize_mode='crop', interpolate_mode=cv2.INTER_LINEAR);
             back = utility.to_channels(back, self.num_channels)

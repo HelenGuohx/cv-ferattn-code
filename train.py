@@ -9,6 +9,7 @@ from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 from torchlib.datasets.fersynthetic  import SecuencialSyntheticFaceDataset, SyntheticFaceDataset
 from torchlib.datasets.factory import FactoryDataset
 from torchlib.attentionnet import AttentionNeuralNet, AttentionGMMNeuralNet
+from torchlib.classnet import ClassNeuralNet
 from torchlib.datasets.datasets import Dataset
 
 import datetime
@@ -114,6 +115,7 @@ def main(params=None):
     fnet = {
         'attnet': AttentionNeuralNet,
         'attgmmnet': AttentionGMMNeuralNet,
+        'classnet': ClassNeuralNet,
     }
 
     network = fnet[fname](
@@ -235,22 +237,27 @@ def main(params=None):
     print(f"Train size: {len(train_data)}, test size: {len(val_data)}")
 
     # print neural net class
-    print('SEG-Torch: {}'.format(datetime.datetime.now()))
+    start = datetime.datetime.now()
+    print('SEG-Torch: {}'.format(start))
     print(network)
 
     # training neural net
     network.fit(train_loader, val_loader, args.epochs, args.snapshot)
 
     print("Optimization Finished!")
+    end = datetime.datetime.now()
+    print("End time is", end)
+    print("Time duration is:", round((end - start).total_seconds()/60, 2))
     print("DONE!!!")
 
 
 if __name__ == '__main__':
-    # DATABACK = '~/.datasets/coco'
-    DATABACK=None
+    DATABACK = '~/.datasets/coco'
     DATA = '~/.datasets'
-    NAMEDATASET = 'ferp'
-    PROJECT = '../out/attnet'
+    NAMEDATASET = 'ck'
+    NAMEMETHOD = 'attnet'  # attnet, attstnnet, attgmmnet, attgmmstnnet
+    ARCH = 'ferattention'  # ferattention, ferattentiongmm, ferattentionstn, preactresnet18
+    PROJECT = f'../out/{NAMEMETHOD}'
     EPOCHS = 5
     TRAINITERATION = 288
     TESTITERATION = 20
@@ -259,10 +266,8 @@ if __name__ == '__main__':
     MOMENTUM = 0.5
     PRINT_FREQ = 40
     WORKERS = 4
-    RESUME = 'chk000004.pth.tar'  # chk000000, model_best
     GPU = 0
-    NAMEMETHOD = 'attnet'  # attnet, attstnnet, attgmmnet, attgmmstnnet
-    ARCH = 'ferattention'  # ferattention, ferattentiongmm, ferattentionstn
+
     LOSS = 'attloss'
     OPT = 'adam'
     SCHEDULER = 'fixed'
@@ -271,11 +276,11 @@ if __name__ == '__main__':
     DIM = 32
     SNAPSHOT = 10
     IMAGESIZE = 64
-    KFOLD = 5
+    KFOLD = 1 #??
     NACTOR = 10
     BACKBONE = 'preactresnet'  # preactresnet, resnet, cvgg
     BREAL = 'real'
-    NUM_FILTERS = 32
+    NUM_FILTERS = 16
 
     EXP_NAME = 'feratt_'+ NAMEMETHOD + \
     '_' + ARCH + \

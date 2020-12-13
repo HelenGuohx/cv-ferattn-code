@@ -2,7 +2,7 @@
 
 PATHDATASET='~/.datasets/'
 NAMEDATASET='ck' #bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
-NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
+NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet, classnet
 PROJECT="../out/$NAMEMETHOD"
 FILENAME='result.txt'
 PATHMODEL='models'

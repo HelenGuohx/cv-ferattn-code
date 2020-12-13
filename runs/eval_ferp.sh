@@ -10,6 +10,7 @@ NAMEMODEL='model_best.pth.tar' #'model_best.pth.tar' #'chk000565.pth.tar'
 BREAL='synthetic' #real, synthetic
 PROJECTNAME=$1
 MODEL=$PROJECT/$PROJECTNAME/$PATHMODEL/$NAMEMODEL
+ITERATION=5000
 
 python ../eval.py \
 --project=$PROJECT \
@@ -20,3 +21,4 @@ python ../eval.py \
 --model=$MODEL \
 --breal=$BREAL \
 --name-method=$NAMEMETHOD \
+--iteration=$ITERATION \

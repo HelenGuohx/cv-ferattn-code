@@ -116,6 +116,7 @@ class DecoderBlockV2(nn.Module):
     def __init__(self, in_channels, middle_channels, out_channels ):
         super(DecoderBlockV2, self).__init__()
         self.in_channels = in_channels
+        # down/up sample the inputs
         self.up  = F.interpolate
         self.cr1 = ConvRelu(in_channels,     middle_channels)
         self.cr2 = ConvRelu(middle_channels, out_channels)
@@ -271,8 +272,11 @@ class FERAttentionNet(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.num_filters = num_filters
+        self.pool_size = 2 #[2(defaul),4,8,16]
 
         print("num filter in FERAttentionNet", num_filters)
+        print("pool size in FERAttentionNet", self.pool_size)
+
 
         # Attention module
         # TODO March 01, 2019: Include select backbone model attention
@@ -334,7 +338,7 @@ class FERAttentionNet(nn.Module):
 
         # Select backbone classification
         if self.backbone == 'preactresnet':
-            att_pool = F.avg_pool2d(att_out, 2)                                                     #if preactresnet
+            att_pool = F.avg_pool2d(att_out, self.pool_size)                                                     #if preactresnet
         elif self.backbone == 'inception':
             att_pool = F.interpolate(att_out, size=(299,299), mode='bilinear', align_corners=False) #if inseption
         elif self.backbone == 'resnet':
@@ -343,6 +347,8 @@ class FERAttentionNet(nn.Module):
             att_pool = att_out                                                                       #if vgg
         else:
             assert(False)
+
+        # print("att pool shape", att_pool.size())
 
         y = self.netclass( att_pool )
 
@@ -361,7 +367,7 @@ class FERAttentionGMMNet(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.num_filters = num_filters
-
+        print("FERAttentionGMMNet", num_filters)
         # Attention module
         # TODO March 01, 2019: Include select backbone model attention
         self.attention_map = AttentionResNet( in_channels=num_channels, out_channels=num_classes, pretrained=True )
@@ -401,7 +407,9 @@ class FERAttentionGMMNet(nn.Module):
     def forward(self, x, x_org=None ):
 
         # Attention map
+        print("input shape", x.size())
         g_att = self.attention_map( x )
+        print("attention output shape", g_att.size())
 
         # Feature module
         out = self.conv_input( x )
@@ -409,13 +417,18 @@ class FERAttentionGMMNet(nn.Module):
         out = self.feature( out )
         out = self.conv_mid( out )
         g_ft = torch.add( out, residual )
+        print("feature module output", g_ft.size())
 
         # Fusion
         # \sigma(A) * F(I)
         attmap = torch.mul( torch.sigmoid( g_att ) ,  g_ft )
+        print("attmap shape", attmap.size())
         att = self.reconstruction( torch.cat( ( attmap, x, g_att ) , dim=1 ) )
         att = F.relu(self.conv2_bn(att))
+        print("att shape", att.size())
+
         att_out = normalize_layer(att)
+        print("att output shape", att_out.size())
 
         # Select backbone classification
         if   self.backbone == 'preactresnet':
@@ -429,7 +442,11 @@ class FERAttentionGMMNet(nn.Module):
         else:
             assert(False)
 
+        print("att pool shape", att_pool.size())
+
         z, y = self.netclass( att_pool )
+        print("z shape", z.size())
+        print("y shape", y.size())
 
         return z, y, att, g_att, g_ft
 
