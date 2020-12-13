@@ -56,6 +56,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         self.view_freq = view_freq
 
 
+    # this function leads to the call `createLoss`, which needs our parameters
     def create(self,
         arch,
         num_output_channels,
@@ -90,6 +91,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
 
         self.num_classes = num_classes
 
+        # this function leads to the call `createLoss`, which needs our parameters
         super(AttentionNeuralNetAbstract, self).create(
             arch,
             num_output_channels,
@@ -245,6 +247,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
         super(AttentionNeuralNet, self).__init__( patchproject, nameproject, no_cuda, parallel, seed, print_freq, gpu, view_freq  )
 
 
+    # The beta parameters in this line is the result of an earlier refactor, and may safely be ignored.
     def create(self,
         arch,
         num_output_channels,
@@ -365,6 +368,8 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             if i % self.print_freq == 0:
                 self.logger_train.logger( epoch, epoch + float(i+1)/len(data_loader), i, len(data_loader), batch_time,   )
 
+
+    # The beta parameters in this line is the result of an earlier refactor, and may safely be ignored.
     def evaluate(self, data_loader, epoch=0, alpha=2, beta=2):
 
         # reset loader
@@ -491,7 +496,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             y_lab_hat = F.softmax( y_lab_hat, dim=1 )
         return y_lab_hat, att, fmap, srf
 
-
+    # this is used for inheritance, so even though our beta parameters aren't used, they need to be here.
     def _create_loss(self, loss, alpha=2, beta=2):
 
         # create loss
@@ -807,7 +812,7 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
             y_lab_hat = F.softmax( y_lab_hat, dim=1 )
         return z, y_lab_hat, att, fmap, srf
 
-
+    # pass the beta parameters to the loss function that uses them
     def _create_loss(self, loss, alpha=2, beta=2):
 
         # create loss

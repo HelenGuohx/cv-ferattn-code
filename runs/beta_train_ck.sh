@@ -35,11 +35,14 @@ rm -rf $PROJECT/$EXP_NAME/
 mkdir -p $PROJECT
 mkdir -p $PROJECT/$EXP_NAME
 
+# Set up an iterator to change the alpha and beta values
 for iteration in 1 2 3 4 5
 do
+  # run the iteration 5 times to take an average
   for run in 1 2 3 4 5
   do
 
+  # assign values based on the iteration
   if [ $iteration = 1 ]
   then
   alpha=2
@@ -66,7 +69,7 @@ do
   beta=4
   fi
 echo "The following iteration had "$alpha' and '$beta' as its parameters.' | tee -a $PROJECT/$EXP_NAME/$EXP_NAME.log
-echo "It is run "$run" of 5."
+echo "It is run "${run}" of 5."
 CUDA_VISIBLE_DEVICES=1 python ../train.py \
 $DATA \
 --name-dataset=$NAMEDATASET \

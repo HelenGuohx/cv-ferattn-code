@@ -17,7 +17,7 @@ class NeuralNetAbstract(object):
     """
     Abstract Neural Net 
     """
-
+    # This function has alpha and beta because I did not recognize the role of the `create` method defined further below.
     def __init__(self,
         patchproject,
         nameproject,
@@ -128,6 +128,7 @@ class NeuralNetAbstract(object):
         # self.plotter =  gph.VisdomLinePlotter(env_name=self.nameproject)
                 
         self._create_model( arch, num_output_channels, num_input_channels, pretrained, **cfg_model )
+        # These parameters must be here to allow the GMMNetwork to inherit correctly.
         self._create_loss( loss, alpha=alpha, beta=beta, **cfg_loss)
         self._create_optimizer( optimizer, lr, **cfg_opt )
         self._create_scheduler_lr( lrsch, **cfg_scheduler )
@@ -135,6 +136,8 @@ class NeuralNetAbstract(object):
     def training(self, data_loader, epoch=0):
         pass
 
+    # This line - and also lines 156  and 152- have alpha and beta from our first refactor in trying to include
+    # these parameters. They are left in as legacy code due to it being easier to leave them than to remove them.
     def evaluate(self, data_loader, epoch=0, alpha=2, beta=2):
         pass
 
@@ -146,7 +149,7 @@ class NeuralNetAbstract(object):
 
     def representation(self, data_loader):
         pass
-    
+
     def fit( self, train_loader, val_loader, epochs=100, snapshot=10, alpha=2, beta=2):
         best_prec = 0
         print('\nEpoch(Before training): {}/{}(0%)'.format(self.start_epoch, epochs))
