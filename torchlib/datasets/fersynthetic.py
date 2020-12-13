@@ -34,9 +34,8 @@ warnings.filterwarnings("ignore")
 
 
 class SyntheticFaceDataset( data.Dataset ):
-    '''
-    Management for Synthetic Face dataset
-    '''
+    ''' Management for Synthetic Face dataset'''
+    # Globals? bad taste. At least put the self term.
     generate_image = 'image'
     generate_image_and_mask = 'image_and_mask' 
 
@@ -58,14 +57,15 @@ class SyntheticFaceDataset( data.Dataset ):
             count: trainiteration/testiteration, to generate more images with different background
 
         """            
-              
+        # Assign all self variables for later.
         self.data = data
         self.bbackimage = pathnameback != None
         self.databack = None
 
         if count is None:
             count = len(data)
-        
+
+        # If the user gives us a place to save these images, do so.
         if self.bbackimage: 
             pathnameback  = os.path.expanduser( pathnameback )
             self.databack = imutl.imageProvide( pathnameback, ext=ext ) 
@@ -126,7 +126,7 @@ class SyntheticFaceDataset( data.Dataset ):
             obj_data = ObjectImageAndMaskMetadataTransform( image_ilu.copy(), mask_t, np.concatenate( ( [label], h),axis=0 ) ) #np.array([label])
                         
         else: 
-            assert(False)         
+            assert(False)    # the user didn't say if they wanted us to generate just an image or if they wanted us to return the max as well.
 
         if self.transform_image: 
             obj_image = self.transform_image( obj_image ) 
