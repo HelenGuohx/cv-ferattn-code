@@ -15,6 +15,7 @@ import datetime
 from argparse import ArgumentParser
 from aug import get_transforms_aug, get_transforms_det
 
+
 def arg_parser():
     """Arg parser"""
     parser = ArgumentParser()
@@ -94,9 +95,11 @@ def arg_parser():
     return parser
 
 
-
+# we include the variable `params` here so that we can run this as a python script without arguments and also as a shell script.
 def main(params=None):
-    # parameters
+    # This model has a lot of variabilty, so it needs a lot of parameters.
+    # We use an arg parser to get all the arguments we need.
+    # See above for the default values, definitions and information on the datatypes.
     parser = arg_parser()
     if params is not None:
         args = parser.parse_args(params)
@@ -113,12 +116,12 @@ def main(params=None):
     alpha = args.alpha
     beta = args.beta
 
+    # Which network do we want to use? Initialize it.
     fname = args.name_method
     fnet = {
         'attnet': AttentionNeuralNet,
         'attgmmnet': AttentionGMMNeuralNet,
     }
-
     network = fnet[fname](
         patchproject=args.project,
         nameproject=args.name,
@@ -129,7 +132,6 @@ def main(params=None):
         gpu=args.gpu,
         view_freq=view_freq,
     )
-
     network.create(
         arch=args.arch,
         num_output_channels=dim,
@@ -146,7 +148,7 @@ def main(params=None):
         alpha=alpha,
         beta=beta)
 
-    # resume
+    # resume if a model can be loaded
     if args.resume is not None:
         network.resume(os.path.join(network.pathmodels, args.resume))
     cudnn.benchmark = True
@@ -155,7 +157,7 @@ def main(params=None):
     nactores = args.nactor
     idenselect = np.arange(nactores) + kfold * nactores
 
-    # datasets
+    # choose and load our datasets
     # training dataset
     if args.breal == 'real':
         train_data = Dataset(
@@ -228,6 +230,7 @@ def main(params=None):
     else:
         sampler = SubsetRandomSampler(np.random.permutation(num_train))
 
+    # Now that we have our dataset, make loaders to facilitate training and validation
     train_loader = DataLoader(train_data, batch_size=args.batch_size,
                               num_workers=args.workers, pin_memory=network.cuda, drop_last=True,
                               sampler=sampler)  # shuffle=True,
@@ -241,7 +244,8 @@ def main(params=None):
     print('SEG-Torch: {}'.format(datetime.datetime.now()))
     print(network)
 
-    # training neural net
+    # fit the neural net - this function performs both training and validation,
+    # printing loss values to the screen and saving the best model for use later.
     network.fit(train_loader, val_loader, args.epochs, args.snapshot)
 
     print("Optimization Finished!")
@@ -249,6 +253,7 @@ def main(params=None):
 
 
 if __name__ == '__main__':
+    # define default values for if command line arguments are not supplied
     # DATABACK = '~/.datasets/coco'
     DATABACK=None
     DATA = '~/.datasets'
