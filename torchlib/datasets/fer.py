@@ -12,7 +12,7 @@ from pytvision.transforms import functional as F
 def getmask( x, p ):
     mask = np.zeros( x.shape[:2] )
     p = [  [[int(e[0]),int(e[1]) ]]  for e in p ]
-    hull = cv2.convexHull( np.gitarray(p),  False  )
+    hull = cv2.convexHull( np.array(p),  False  )
     cv2.fillPoly(mask, [hull], 1)   
     return mask
 

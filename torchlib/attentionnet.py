@@ -1,11 +1,7 @@
 
 import os
-import math
-import shutil
-import time
 
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -18,8 +14,6 @@ from . import netlosses as nloss
 
 from pytvision.neuralnet import NeuralNetAbstract
 from pytvision.logger import Logger, AverageFilterMeter, AverageMeter
-from pytvision import graphic as gph
-from pytvision import netlearningrate
 from pytvision import utils as pytutils
 
 #----------------------------------------------------------------------------------------------

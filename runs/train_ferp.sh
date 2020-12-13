@@ -29,7 +29,7 @@ KFOLD=5
 NACTOR=10
 BACKBONE='preactresnet' #preactresnet, resnet, cvgg
 NUM_FILTERS=32
-BREAL='real' #real, synthetic
+BREAL='synthetic' #real, synthetic
 EXP_NAME='feratt_'$NAMEMETHOD'_'$ARCH'_'$LOSS'_'$OPT'_'$NAMEDATASET'_'$BREAL'_filter'$NUM_FILTERS'_dim'$DIM'_bb'$BACKBONE'_fold'$KFOLD'_000'
 
 rm -rf $PROJECT/$EXP_NAME/$EXP_NAME.log
