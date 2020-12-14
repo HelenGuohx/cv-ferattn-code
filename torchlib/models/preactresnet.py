@@ -11,7 +11,7 @@ __all__ = [
     'preactresnet18', 'preactresnet34', 'preactresnet50', 'preactresnet101', 'preactresnet152',
     'preactresembnet18', 'preactresembnetex18', 'preactresembnetex34'
     ]
-
+# Start with a small class that we can use to build later
 class PreActBlock(nn.Module):
     '''Pre-activation version of the BasicBlock.'''
     expansion = 1
@@ -35,7 +35,7 @@ class PreActBlock(nn.Module):
         out = self.conv2(F.relu(self.bn2(out)))
         out += shortcut
         return out
-
+# Pre-activation version of the original Bottleneck module.
 class PreActBottleneck(nn.Module):
     '''Pre-activation version of the original Bottleneck module.'''
     expansion = 4
@@ -62,7 +62,7 @@ class PreActBottleneck(nn.Module):
         out = self.conv3(F.relu(self.bn3(out)))
         out += shortcut
         return out
-
+# Make a ResNet implementation that lets us have fine control over the number and size of the blocks.
 class PreActResNet(nn.Module):
     def __init__(self, block, num_blocks,  num_classes=1000, num_channels=3, initial_channels=64):
         super(PreActResNet, self).__init__()
@@ -97,7 +97,7 @@ class PreActResNet(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
-
+# Lines 101 - 134 are basically a factory for different sizes of nets.
 def preactresnet18( pretrained=False, **kwargs ):
     model = PreActResNet(PreActBlock, [2,2,2,2], **kwargs)
     if pretrained:
@@ -133,7 +133,7 @@ def preactresnet152(pretrained=False, **kwargs):
         pass
     return model
 
-
+# a module that can also serve as an embedding layer for larger networks.
 class PreActResEmbNet(nn.Module):
     def __init__(self, block, num_blocks,  dim=64, num_channels=3, initial_channels=64):
         super(PreActResEmbNet, self).__init__()
@@ -170,7 +170,7 @@ class PreActResEmbNet(nn.Module):
         out = self.linear(out)
         return out
 
-
+# LInes 174 to 186 are essentially factories for the above class.
 def preactresembnet18( pretrained=False, **kwargs ):
     model = PreActResEmbNet(PreActBlock, [2,2,2,2], **kwargs)
     if pretrained:
@@ -185,7 +185,7 @@ def preactresembnet152(pretrained=False, **kwargs):
         pass
     return model
 
-
+# A preActResNet embedding layer that uses expansion for better results.
 class PreActResEmbExNet(nn.Module):
     def __init__(self, block, num_blocks, dim=64, num_classes=1000, num_channels=3, initial_channels=64):
         super(PreActResEmbExNet, self).__init__()
@@ -235,7 +235,7 @@ class PreActResEmbExNet(nn.Module):
         y = self.classification(out)
         return out, y
 
-
+# From here to the end of the file are classes that act as factories to return an instantiated version of the above class. t
 def preactresembnetex18( pretrained=False, **kwargs ):
     model = PreActResEmbExNet(PreActBlock, [2,2,2,2], **kwargs)
     if pretrained:

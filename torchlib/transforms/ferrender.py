@@ -8,23 +8,26 @@ import random as rn
 
 from pytvision.transforms import functional as F
 
-
+# Flip the image over a horizontal axis half the time
 def hflip( image, mask ):
     if rn.random() < 0.5:
         image = image[:,::-1,:]
         mask  = mask[:,::-1]    
     return image, mask
 
+# Pad around the edges of an image
 def pad( image, h_pad, w_pad, padding=cv2.BORDER_CONSTANT ):
     image = F.pad(image, h_pad, w_pad, padding)
     return image
-        
+
+# Linearly scale an image to a range determined by factor
 def scale(image, mask, factor=0.2, padding=cv2.BORDER_CONSTANT ):
     factor =  1.0 + factor*rn.uniform(-1.0, 1.0)    
     image = F.scale( image, factor, cv2.INTER_LINEAR, padding )
     mask  = F.scale( mask, factor, cv2.INTER_NEAREST, padding )    
     return image, mask
 
+# Get a random section of the image
 def crop(image, cropsize, limit=10, padding=cv2.BORDER_CONSTANT):     
     h, w = image.shape[:2]
     newW, newH = cropsize
@@ -34,7 +37,7 @@ def crop(image, cropsize, limit=10, padding=cv2.BORDER_CONSTANT):
     image = F.imcrop( image, box, padding )
     return image
 
-
+# Find the needed numbers to twist an image
 def param2theta(mat_r, mat_t, mat_w, w, h):
     Hr = np.concatenate( (mat_r,[[0,0,1]]),axis=0 )  
     Ht = np.concatenate( (mat_t,[[0,0,1]]),axis=0 )
@@ -51,6 +54,7 @@ def param2theta(mat_r, mat_t, mat_w, w, h):
     theta = theta.reshape(-1)
     return theta
 
+# Perform some random transformations, and keep track of which
 def transform(image, mask, angle=360, translation=0.2, warp=0.0, padding=cv2.BORDER_CONSTANT ):
     imsize = image.shape[:2]
     mat_r, mat_t, mat_w = F.get_geometric_random_transform( imsize, angle, translation, warp )
@@ -59,7 +63,8 @@ def transform(image, mask, angle=360, translation=0.2, warp=0.0, padding=cv2.BOR
     h,w = image.shape[:2]
     theta = param2theta( mat_r, mat_t, mat_w, w, h )
     return image, mask, theta
-    
+
+# Normalize each color channel separately.
 def norm(image, mask=None):    
     image = image.astype(np.float)
     for i in range(3):
@@ -70,14 +75,15 @@ def norm(image, mask=None):
     image  =  (image*255.0).astype(np.uint8)   
     return image
         
-
+# Use a mask to generate a space to place a face
 def filtermask( mask, sz=7 ):
     se = cv2.getStructuringElement(cv2.MORPH_RECT,(sz,sz))
     mask = cv2.morphologyEx(mask*1.0, cv2.MORPH_CLOSE, se)
     mask = cv2.erode(mask*1.0, se, iterations=1)==1          
     mask = ndi.morphology.binary_fill_holes( mask*1.0 , structure=np.ones((sz,sz)) ) == 1
     return np.stack( (mask,mask,mask), axis=2 )
-    
+
+# Normalize all colors together
 def ligthnorm( image, mask, back ):   
             
     face_lab = skcolor.rgb2lab( image )
@@ -92,9 +98,9 @@ def ligthnorm( image, mask, back ):
     image_ilu = skcolor.lab2rgb(face_lab)*255 
     return image_ilu
     
-    
+
 class Generator(object):
-    
+    ''' an object that generates augmented images. '''
     def __init__(self, iluminate=True, angle=45, translation=0.3, warp=0.1, factor=0.2 ):
         self.iluminate=iluminate
         self.angle=angle
@@ -102,7 +108,7 @@ class Generator(object):
         self.warp=warp
         self.factor=factor
 
-
+    # Take an image and a background, then apply them together.
     def mixture(self, img, mask, back, iluminate=True, angle=45, translation=0.3, warp=0.1, factor=0.2 ):
         '''mixture image with background '''        
 
@@ -136,7 +142,7 @@ class Generator(object):
         
         return image_org, image_ilu, mask_t, h
     
-
+    # Take an image and  a background and prepare them to go through the mixture function. 
     def generate(self, image, back, pad = 10 ):
         '''generate image
         first resize image to 128 x 128,
