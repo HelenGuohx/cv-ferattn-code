@@ -30,14 +30,7 @@ from aug import get_transforms_aug, get_transforms_det
 
 
 # METRICS
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from sklearn.neural_network import MLPClassifier
-from sklearn.naive_bayes import GaussianNB
 import sklearn.metrics as metrics
-
-
 from argparse import ArgumentParser
 
 
@@ -181,7 +174,6 @@ def main(params=None):
             print("size of data:", len(dataset))
             print("num of batches", len(dataloader))
 
-            # representation
             if name_method == 'attgmmnet':
                 # representation
                 Y_labs, Y_lab_hats, Zs = network.representation(dataloader, breal)
@@ -206,7 +198,6 @@ def main(params=None):
 
         tuplas=[]
         print('|Num\t|Acc\t|Prec\t|Rec\t|F1\t|Set\t|Type\t|Accuracy_type\t')
-        # Perform the experiments
         for  i, experiment in enumerate(experiments):
 
             name_dataset = experiment['name']
@@ -236,9 +227,6 @@ def main(params=None):
                 subset, real, 'topk'
             ))
 
-            # cm = metrics.confusion_matrix(y, yhat)
-            # cm_display = metrics.ConfusionMatrixDisplay(cm, display_labels=np.arange(8)).plot()
-            # print(cm_display)
             print(f'save y and yhat to {real}_{subset}_y.npz')
             np.savez(os.path.join(pathproject, f'{real}_{subset}_y.npz'), name1=yhat, name2=y)
 
@@ -294,79 +282,6 @@ def main(params=None):
         df.to_csv( os.path.join( pathproject, 'experiments_cls.csv' ) , index=False, encoding='utf-8')
         print('save experiments class ...')
         print()
-    
-    if brecover_test:
-        experiments = [ 
-            { 'name': namedataset,  'train': True,  'val': True },
-            { 'name': namedataset,  'train': False, 'val': False },
-            { 'name': namedataset,  'train': False, 'val': True },
-            { 'name': namedataset,  'train': True,  'val': False },
-            ]
-        
-        tuplas=[]
-        print('|Num\t|Acc\t|Prec\t|Rec\t|F1\t|Type\t')
-        # Perform the experiments
-        for  i, experiment in enumerate(experiments):
-            name_dataset = experiment['name']            
-            real_train   = 'real' if experiment['train'] else 'no_real'
-            real_val     = 'real' if experiment['val']   else 'no_real'
-            
-            rep_trn_pathname = os.path.join( pathproject, 'rep_{}_{}_{}_{}.pth'.format(projectname, name_dataset, 'train',  real_train) )
-            rep_val_pathname = os.path.join( pathproject, 'rep_{}_{}_{}_{}.pth'.format(projectname, name_dataset, 'val',  real_val) )
-            
-            data_emb_train = torch.load(rep_trn_pathname)
-            data_emb_val = torch.load(rep_val_pathname)
-            Xo  = data_emb_train['Z']
-            Yo  = data_emb_train['Y'] 
-            Xto = data_emb_val['Z']
-            Yto = data_emb_val['Y'] 
-            
-
-            clf = KNeighborsClassifier(n_neighbors=11)
-
-            clf.fit(Xo,Yo)
-
-            y = Yto
-            yhat = clf.predict(Xto)
-            
-            acc = metrics.accuracy_score(y, yhat)
-            nmi_s = metrics.cluster.normalized_mutual_info_score(y, yhat)
-            mi = metrics.cluster.mutual_info_score(y, yhat)
-            h1 = metrics.cluster.entropy(y)
-            h2 = metrics.cluster.entropy(yhat)
-            nmi = 2*mi/(h1+h2)
-            precision = metrics.precision_score(y, yhat, average='macro')
-            recall = metrics.recall_score(y, yhat, average='macro')
-            f1_score = 2*precision*recall/(precision+recall)
-            
-            
-            #|Name|Dataset|Cls|Acc| ...
-            tupla = { 
-                'Name':projectname,  
-                'Dataset': '{}({}_{})'.format(  name_dataset,  real_train, real_val ),
-                'Accuracy': acc,
-                'NMI': nmi_s,
-                'Precision': precision,
-                'Recall': recall,
-                'F1 score': f1_score,        
-            }
-            tuplas.append(tupla)
-
-
-            print( '|{}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{}/{}\t'.format(
-                i, 
-                acc, precision, recall, f1_score, 
-                real_train, real_val,
-                ).replace('.',',')  
-                )
-
-        # save
-        df = pd.DataFrame(tuplas)
-        df.to_csv( os.path.join( pathproject, 'experiments_recovery.csv' ) , index=False, encoding='utf-8')
-        print('save experiments recovery ...')
-        print()
-    
-    
     print('DONE!!!')
         
 

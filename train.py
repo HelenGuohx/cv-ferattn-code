@@ -97,16 +97,12 @@ def arg_parser():
     return parser
 
 
-# we include the variable `params` here so that we can run this as a python script without arguments and also as a shell script.
-def main(params=None):
+def main():
     # This model has a lot of variabilty, so it needs a lot of parameters.
     # We use an arg parser to get all the arguments we need.
     # See above for the default values, definitions and information on the datatypes.
     parser = arg_parser()
-    if params is not None:
-        args = parser.parse_args(params)
-    else:
-        args = parser.parse_args()
+    args = parser.parse_args()
     imsize = args.image_size
     parallel = args.parallel
     num_classes = args.num_classes
@@ -190,7 +186,7 @@ def main(params=None):
             transform=get_transforms_det(args.image_size),
         )
     else:
-        # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
+        # SyntheticFaceDataset
         train_data = SyntheticFaceDataset(
             data=FactoryDataset.factory(
                 pathname=args.data,
@@ -209,7 +205,7 @@ def main(params=None):
         )
 
         # validate dataset
-        # SyntheticFaceDataset, SecuencialSyntheticFaceDataset
+        # SyntheticFaceDataset
         val_data = SyntheticFaceDataset(
             data=FactoryDataset.factory(
                 pathname=args.data,
