@@ -260,10 +260,10 @@ class FERClassicDataset( dataProvide ):
     def getroi(self):
         
         box = [0,0,48,48]
-        face_rc = Rect(box)        
-        return face_rc
+        # face_rc = Rect(box)
+        # return face_rc
 
 
-# This dataset is not used in our code. This is left here so as to not interfere with import statements elsewhere. 
+# This dataset is not used in our code. This is left here so as to not interfere with import statements elsewhere.
 class FERDarkClassicDataset( FERClassicDataset ):
     pass
