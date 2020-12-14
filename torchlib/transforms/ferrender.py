@@ -142,7 +142,7 @@ class Generator(object):
         
         return image_org, image_ilu, mask_t, h
     
-    # Take an image and  a background and prepare them to go through the mixture function. 
+    # Take an image and  a background and prepare them to go through the mixture function.
     def generate(self, image, back, pad = 10 ):
         '''generate image
         first resize image to 128 x 128,

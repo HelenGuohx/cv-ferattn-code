@@ -23,8 +23,10 @@ def create_folder(pathname, name):
         os.makedirs(pathname)
     return pathname
 
+# A standard factory to return dataset objects.
 class FactoryDataset(object):
-    
+
+    # Define our strings to make validation easier.
     training = 'train'
     validation = 'val'
     test = 'test'
@@ -67,11 +69,12 @@ class FactoryDataset(object):
     cub2011metric='cub2011metric'
     cars196metric='cars196metric'
     
-    
+    # validate a valid type of data
     @classmethod
     def _checksubset(self, subset): 
         return subset=='train' or subset=='val' or subset=='test'
 
+    # Create and return a valid dataset object
     @classmethod
     def factory(self,         
         pathname,
@@ -209,55 +212,6 @@ class FactoryDataset(object):
             pathname = create_folder(pathname, name)
             data = affect.create_affect(path=pathname, train=btrain )
             
-#         elif name == 'ferblack': 
-#             btrain=(subset=='train')
-#             pathname = create_folder(pathname, name) 
-#             data = ferfolder.FERFolderDataset(pathname, train=btrain, idenselect=idenselect, download=download)        
-#             data.labels = np.array( data.labels )
-                        
-            
-        elif name == 'ckdark':
-            btrain=(subset=='train') 
-            pathname = create_folder(pathname, 'ck')
-            data = fer.FERDarkClassicDataset(pathname, 'ck', idenselect=idenselect, train=btrain )
-
-        elif name == 'ckpdark':
-            btrain=(subset=='train')
-            pathname = create_folder(pathname, 'ckp')
-            data = fer.FERDarkClassicDataset(pathname, 'ckp', idenselect=idenselect, train=btrain )
-            
-        elif name == 'bu3dfedark':
-            btrain=(subset=='train')
-            pathname = create_folder(pathname, 'bu3dfe')
-            data = fer.FERDarkClassicDataset(pathname, 'bu3dfe', idenselect=idenselect, train=btrain )
-
-        elif name == 'jaffedark':
-            btrain=(subset=='train')
-            pathname = create_folder(pathname, 'jaffe')
-            data = fer.FERDarkClassicDataset(pathname, 'jaffe', idenselect=idenselect, train=btrain )
-            
-        elif name == 'affectnetdark':
-            btrain=(subset=='train')
-            pathname = create_folder(pathname, 'affectnet')
-            data = affect.create_affectdark(path=pathname, train=btrain )
-            
-
-            
-            
-        
-        # metric learning dataset
-
-        elif name == 'cub2011metric':  
-            btrain=(subset=='train')       
-            pathname = create_folder(pathname, 'cub2011')
-            data = cub2011.CUB2011MetricLearning(pathname, train=btrain,  download=download)
-            data.labels = np.array( data.targets )  
-
-        elif name == 'cars196metric':  
-            btrain=(subset=='train')       
-            pathname = create_folder(pathname, 'cars196')
-            data = cars196.Cars196MetricLearning(pathname, train=btrain,  download=download)
-            data.labels = np.array( data.targets ) 
             
         else: 
             assert(False)
