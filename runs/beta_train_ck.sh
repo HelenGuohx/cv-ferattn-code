@@ -17,7 +17,7 @@ RESUME='model_best.pth.tar' #chk000000, model_best
 GPU=1
 NAMEMETHOD='attgmmnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
 ARCH='ferattentiongmm' #ferattention, ferattentiongmm, ferattentionstn
-LOSS='attgmmloss'
+LOSS='attloss'
 OPT='adam'
 SCHEDULER='fixed'
 NUMCLASS=8 #6, 7, 8
@@ -70,7 +70,7 @@ do
   fi
 echo "The following iteration had "$alpha' and '$beta' as its parameters.' | tee -a $PROJECT/$EXP_NAME/$EXP_NAME.log
 echo "It is run "${run}" of 5."
-CUDA_VISIBLE_DEVICES=1 python ../train.py \
+CUDA_VISIBLE_DEVICES=1 python3 ../train.py \
 $DATA \
 --name-dataset=$NAMEDATASET \
 --databack=$DATABACK \

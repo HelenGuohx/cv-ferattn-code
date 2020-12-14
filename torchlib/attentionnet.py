@@ -594,6 +594,8 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
         backbone='preactresnet',
         breal='real',
         num_filters=32,
+        alpha=2,
+        beta=2
         ):
         """
         Create
