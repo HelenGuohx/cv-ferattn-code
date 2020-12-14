@@ -65,7 +65,7 @@ def arg_parser():
                         help='optimize function')
     parser.add_argument('--scheduler', default='fixed', type=str,
                         help='scheduler function for learning rate')
-    parser.add_argument('--image-size', default=388, type=int, metavar='N',
+    parser.add_argument('--image-size', default=128, type=int, metavar='N',
                         help='image size')
     parser.add_argument('--channels', default=1, type=int, metavar='N',
                         help='input channel (default: 1)')
@@ -90,6 +90,9 @@ def arg_parser():
     parser.add_argument('--breal', type=str, default='real', help='dataset is real or synthetic')
     parser.add_argument('--num_filters', type=int, default=32, help='reconstruction size')
 
+    parser.add_argument('--alpha', default=2.0, type=float, help='The first parameter of the beta distribution')
+    parser.add_argument('--beta', default=2.0, type=float, help="the second parameter of the beta distribution")
+
     return parser
 
 
@@ -110,6 +113,8 @@ def main(params=None):
     view_freq = 1
     trainiteration = args.trainiteration
     testiteration = args.testiteration
+    alpha = args.alpha
+    beta = args.beta
 
     fname = args.name_method
     fnet = {
@@ -141,9 +146,11 @@ def main(params=None):
         pretrained=args.finetuning,
         size_input=imsize,
         num_classes=num_classes,
-        num_filters=num_filters,
-        breal=args.breal
+        breal=args.breal,
+        alpha=alpha,
+        beta=beta
     )
+
 
     # resume
     if args.resume is not None:
@@ -252,76 +259,4 @@ def main(params=None):
 
 
 if __name__ == '__main__':
-    DATABACK = '~/.datasets/coco'
-    DATA = '~/.datasets'
-    NAMEDATASET = 'ck'
-    NAMEMETHOD = 'attnet'  # attnet, attstnnet, attgmmnet, attgmmstnnet
-    ARCH = 'ferattention'  # ferattention, ferattentiongmm, ferattentionstn, preactresnet18
-    PROJECT = f'../out/{NAMEMETHOD}'
-    EPOCHS = 5
-    TRAINITERATION = 288
-    TESTITERATION = 20
-    BATCHSIZE = 128  # 32, 64, 128, 160, 200, 240
-    LEARNING_RATE = 0.0001
-    MOMENTUM = 0.5
-    PRINT_FREQ = 40
-    WORKERS = 4
-    GPU = 0
-
-    LOSS = 'attloss'
-    OPT = 'adam'
-    SCHEDULER = 'fixed'
-    NUMCLASS = 8  # 6, 7, 8
-    NUMCHANNELS = 3
-    DIM = 32
-    SNAPSHOT = 10
-    IMAGESIZE = 64
-    KFOLD = 1 #??
-    NACTOR = 10
-    BACKBONE = 'preactresnet'  # preactresnet, resnet, cvgg
-    BREAL = 'real'
-    NUM_FILTERS = 16
-
-    EXP_NAME = 'feratt_'+ NAMEMETHOD + \
-    '_' + ARCH + \
-    '_' + LOSS + \
-    '_' + OPT + \
-    '_' + NAMEDATASET + \
-    '_dim'+ str(DIM) + \
-    '_bb'+ BACKBONE + \
-    '_fold'+ str(KFOLD) + '_000'
-
-    CUDA_VISIBLE_DEVICES = 0
-
-    # --trainiteration = {TRAINITERATION} \
-    # --testiteration = {TESTITERATION} \
-    # --databack
-
-    params = f"{DATA} \
---name-dataset={NAMEDATASET} \
---project={PROJECT} \
---name={EXP_NAME} \
---epochs={EPOCHS} \
---kfold={KFOLD} \
---nactor={NACTOR} \
---batch-size={BATCHSIZE} \
---learning-rate={LEARNING_RATE} \
---momentum={MOMENTUM} \
---image-size={IMAGESIZE} \
---channels={NUMCHANNELS} \
---dim={DIM} \
---num-classes={NUMCLASS} \
---print-freq={PRINT_FREQ} \
---snapshot={SNAPSHOT} \
---workers={WORKERS} \
---gpu={GPU} \
---loss={LOSS} \
---opt={OPT} \
---scheduler={SCHEDULER} \
---name-method={NAMEMETHOD} \
---arch={ARCH} \
---breal={BREAL} \
---num_filters={NUM_FILTERS} \
- --finetuning ".split()
-
-    main()
+   main()

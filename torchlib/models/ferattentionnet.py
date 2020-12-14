@@ -357,7 +357,7 @@ class FERAttentionNet(nn.Module):
 
 
 
-
+# this class is the same as the class above, but with an extra loss function - the Gaussian manifold loss.
 class FERAttentionGMMNet(nn.Module):
     """FERAttentionGMMNet
     """

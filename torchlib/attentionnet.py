@@ -50,6 +50,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         self.view_freq = view_freq
 
 
+    # this function leads to the call `createLoss`, which needs our parameters
     def create(self,
         arch,
         num_output_channels,
@@ -64,7 +65,9 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
         size_input=388,
         num_classes=8,
         backbone='preactresnet',
-        num_filters=32
+        num_filters=32,
+        alpha=2,
+        beta=2
         ):
         """
         Create
@@ -84,6 +87,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
 
         self.num_classes = num_classes
 
+        # this function leads to the call `createLoss`, which needs our parameters
         super(AttentionNeuralNetAbstract, self).create(
             arch,
             num_output_channels,
@@ -96,6 +100,8 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
             cfg_opt=cfg_opt,
             cfg_scheduler=cfg_scheduler,
             cfg_model=cfg_model,
+            alpha=alpha,
+            beta=beta
         )
 
         self.size_input = size_input
@@ -248,6 +254,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
         super(AttentionNeuralNet, self).__init__( patchproject, nameproject, no_cuda, parallel, seed, print_freq, gpu, view_freq  )
 
 
+    # The beta parameters in this line is the result of an earlier refactor, and may safely be ignored.
     def create(self,
         arch,
         num_output_channels,
@@ -263,7 +270,9 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
         num_classes=8,
         backbone='preactresnet',
         num_filters=32,
-        breal=True
+        breal=True,
+        alpha=2,
+        beta=2
         ):
         """
         Create
@@ -368,7 +377,9 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             if i % self.print_freq == 0:
                 self.logger_train.logger( epoch, epoch + float(i+1)/len(data_loader), i, len(data_loader), batch_time,   )
 
-    def evaluate(self, data_loader, epoch=0):
+
+    # The beta parameters in this line is the result of an earlier refactor, and may safely be ignored.
+    def evaluate(self, data_loader, epoch=0, alpha=2, beta=2):
 
         # reset loader
         self.logger_val.reset()
@@ -495,8 +506,8 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             y_lab_hat = F.softmax( y_lab_hat, dim=1 )
         return y_lab_hat, att, fmap, srf
 
-
-    def _create_loss(self, loss):
+    # this is used for inheritance, so even though our beta parameters aren't used, they need to be here.
+    def _create_loss(self, loss, alpha=2, beta=2):
 
         # create loss
         if loss == 'attloss':
@@ -824,14 +835,14 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
             y_lab_hat = F.softmax( y_lab_hat, dim=1 )
         return z, y_lab_hat, att, fmap, srf
 
-
-    def _create_loss(self, loss):
+    # pass the beta parameters to the loss function that uses them
+    def _create_loss(self, loss, alpha=2, beta=2):
 
         # create loss
         if loss == 'attloss':
             self.criterion_bce = nn.CrossEntropyLoss().cuda()
             self.criterion_att = nloss.Attloss()
-            self.criterion_gmm = nloss.DGMMLoss( self.num_classes, cuda=self.cuda )
+            self.criterion_gmm = nloss.DGMMLoss( self.num_classes, cuda=self.cuda, alpha=alpha, beta=beta)
         else:
             assert(False)
 
