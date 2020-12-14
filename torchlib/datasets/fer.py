@@ -8,7 +8,7 @@ from pytvision.datasets.imageutl import dataProvide
 from pytvision.transforms import functional as F
 
 
-
+# Define a polygon to decide where to paste a face for a synthetic dataset
 def getmask( x, p ):
     mask = np.zeros( x.shape[:2] )
     p = [  [[int(e[0]),int(e[1]) ]]  for e in p ]
@@ -16,6 +16,7 @@ def getmask( x, p ):
     cv2.fillPoly(mask, [hull], 1)   
     return mask
 
+# Obtain the necessary parameters to rotate our image to augment our data
 def param2theta(mat_r, w, h):
     H = np.concatenate( (mat_r,[[0,0,1]]),axis=0 )      
     param = H #np.linalg.inv(H)
@@ -28,6 +29,7 @@ def param2theta(mat_r, w, h):
     theta[1,2] = param[1,2]*2/h + param[1,0] + param[1,1] - 1
     return theta
 
+# Turn our angle into a matrix we can use to convert our image
 def angle2mat( fi ):
     "To convert angle to rotation matrix"
     rx = fi[0]; ry = fi[1]; rz = fi[2];
@@ -54,6 +56,7 @@ def resize( image, height=128,  width=128, interpolate_mode=cv2.INTER_LANCZOS4 )
         interpolate_mode=interpolate_mode, 
         )
 
+# Adjust our face mask so that we don't majorly change the image when we apply a face
 def adjust( image, plm  ):
     
     mu = plm.mean(axis=0)
@@ -88,7 +91,7 @@ def adjust( image, plm  ):
     
     return image_rot, plm_rot
 
-
+# Split our data into data to train on and data to validate our model on.
 def split_train_valid(path, filename, test_actor_num):
     data_dir = os.path.join(path, filename + '.h5')
     f = h5py.File(data_dir, 'r')
@@ -121,6 +124,7 @@ def split_train_valid(path, filename, test_actor_num):
         f.create_dataset('iclass', data=labels[test_index == 1])
         f.create_dataset('num', data=numclass)
 
+# Load a dataset from a file
 class FERClassicDataset0(dataProvide):
     """
     FER CLASSIC dataset
@@ -168,26 +172,7 @@ class FERClassicDataset0(dataProvide):
         label = self.labels[i]
         return image, label
 
-    # def iden(self, i):
-    #     return self.iactor[i]
-    #
-    # def getladmarks(self):
-    #     i = self.index
-    #     # return np.squeeze( self.points[i,...] ).transpose(1,0) * [self.width / self.imsize[0], self.height / self.imsize[1]]
-    #     return np.squeeze(self.points[i, ...]).transpose(1, 0)
-    #
-    # def getroi(self):
-    #
-    #     # pts = self.getladmarks()
-    #     # minx = np.min(pts[:,0]); maxx = np.max(pts[:,0]);
-    #     # miny = np.min(pts[:,1]); maxy = np.max(pts[:,1]);
-    #     # box = [minx,miny,maxx,maxy]
-    #
-    #     box = [0, 0, 48, 48]
-    #     face_rc = Rect(box)
-    #     return face_rc
-
-
+# Parse a dataset by emotions, using numbers to one-hot encode.
 class FERClassicDataset( dataProvide ):
     """
     FER CLASSIC dataset
@@ -220,12 +205,9 @@ class FERClassicDataset( dataProvide ):
         f = h5py.File(dir)
 
         self.data   = np.array(f["data"])
-        # self.points = np.array(f["points"]) #?? empty
         self.imsize = np.array(f["imsize"])[0,:].astype(int)
         self.iactor = np.array(f["iactor"]).astype(int) #??
         self.labels = np.array(f["iclass"]).astype(int)
-        # self.name   = np.array(f["name"])
-        # self.num    = np.array(f["num"])[0,0].astype(int) #?? empty
         self.num = len(f["iclass"])
 
         # Emotions class 
@@ -237,10 +219,7 @@ class FERClassicDataset( dataProvide ):
             toferp = [0, 4, 5, 6, 1, 3, 2, 7 ]
         else:
             assert(False)
-        
-        #self.toferp = toferp
-        #self.classes = classes
-        #self.class_to_idx = { _class: i for i, _class in enumerate(classes) }    
+
 
         self.labels = np.array([ toferp[l] for l in self.labels ])
         self.numclass = len(np.unique(self.labels))
@@ -251,14 +230,6 @@ class FERClassicDataset( dataProvide ):
             index[self.iactor == actors[i]] = 0
         self.indexs = np.where(index == train)[0]        
         self.transform = transform
-        
-        # ######
-        # index_nne = []
-        # for idx in self.indexs:
-        #     if( self.labels[ idx ] != 0 ):
-        #         index_nne.append( idx )
-        # self.indexs = np.array(index_nne)
-        # #######
         
         self.labels_org = self.labels
         self.labels = self.labels[ self.indexs ]
@@ -284,66 +255,15 @@ class FERClassicDataset( dataProvide ):
 
     def getladmarks(self):
         i = self.index
-        #return np.squeeze( self.points[i,...] ).transpose(1,0) * [self.width / self.imsize[0], self.height / self.imsize[1]]
         return np.squeeze( self.points[i,...]).transpose(1,0)
 
-    def getroi(self):   
-
-        #pts = self.getladmarks()
-        #minx = np.min(pts[:,0]); maxx = np.max(pts[:,0]);
-        #miny = np.min(pts[:,1]); maxy = np.max(pts[:,1]); 
-        #box = [minx,miny,maxx,maxy]
+    def getroi(self):
         
         box = [0,0,48,48]
-        face_rc = Rect(box)        
-        return face_rc
+        # face_rc = Rect(box)
+        # return face_rc
 
 
-    
-
-    
+# This dataset is not used in our code. This is left here so as to not interfere with import statements elsewhere.
 class FERDarkClassicDataset( FERClassicDataset ):
-    """
-    FER CLASSIC dark dataset
-        CK, JAFFE, BU        
-    Args:
-        path
-        filename
-        idenselect
-        transform (callable, optional): Optional transform to be applied on a sample.   
-    """
-
-
-    def __init__(self, 
-        path,
-        filename,
-        idenselect=[],
-        train=True,
-        transform=None,
-        ):
-        super(FERDarkClassicDataset, self).__init__( path, filename, idenselect, train, transform )
-            
-
-    def __getitem__(self, i):   
-
-        if i<0 and i>len(self.index): raise ValueError('Index outside range')
-        i = self.indexs[i]
-        self.index = i        
-        image = np.array( self.data[i].reshape(self.imsize).transpose(1,0), dtype=np.uint8 )
-        label = self.labels_org[i] ####  -1  ##########  
-        plm = np.array( self.getladmarks() ).reshape( -1, 2 )
-        
-        image_rot, plm_rot = adjust( image, plm )
-        mask_rot = getmask( image_rot, plm_rot )
-                
-        image_rot  = resize( image_rot, height=128,  width=128, interpolate_mode=cv2.INTER_LANCZOS4 )[:,:,0]
-        mask_rot   = resize( mask_rot , height=128,  width=128, interpolate_mode=cv2.INTER_LINEAR )[:,:,0]
-                
-        image_mask = ( (image_rot/255.0 + 0.2) * mask_rot)
-        image_mask = (np.clip(image_mask, 0,1 ) * 255).astype(np.uint8)
-        
-        #print(image_mask.shape)
-        #print(image_mask.min(), image_mask.max())
-                
-        return image_mask, label
-
+    pass
