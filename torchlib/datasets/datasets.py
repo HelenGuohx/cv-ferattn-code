@@ -30,8 +30,8 @@ class Dataset( object ):
         Initialization 
         Args:
             @data: dataprovide class
-            @num_channels: 
-            @tranform: tranform           
+            @num_channels: num of channels in image data
+            @tranform: transformation functions
         """             
         
         if count is None: count = len(data)
@@ -54,7 +54,9 @@ class Dataset( object ):
         image = utility.to_channels(image, self.num_channels)        
         label = utility.to_one_hot(label, self.numclass) #no one-hot haixuanguo
 
+        # parse image and label to tensor
         obj = ObjectImageAndLabelTransform( image, label )
+        # transform data
         if self.transform: 
             obj = self.transform( obj )
         return obj.to_dict()

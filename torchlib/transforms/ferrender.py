@@ -64,7 +64,7 @@ def transform(image, mask, angle=360, translation=0.2, warp=0.0, padding=cv2.BOR
     theta = param2theta( mat_r, mat_t, mat_w, w, h )
     return image, mask, theta
 
-# Normalize each color channel separately.
+# Normalize each channel separately.
 def norm(image, mask=None):    
     image = image.astype(np.float)
     for i in range(3):
@@ -84,8 +84,7 @@ def filtermask( mask, sz=7 ):
     return np.stack( (mask,mask,mask), axis=2 )
 
 # Normalize all colors together
-def ligthnorm( image, mask, back ):   
-            
+def ligthnorm( image, mask, back ):
     face_lab = skcolor.rgb2lab( image )
     back_lab = skcolor.rgb2lab( back )    
     face_l = face_lab[:,:,0] 
@@ -100,7 +99,7 @@ def ligthnorm( image, mask, back ):
     
 
 class Generator(object):
-    ''' an object that generates augmented images. '''
+    ''' an object that generates synthetic images. '''
     def __init__(self, iluminate=True, angle=45, translation=0.3, warp=0.1, factor=0.2 ):
         self.iluminate=iluminate
         self.angle=angle
@@ -142,12 +141,18 @@ class Generator(object):
         
         return image_org, image_ilu, mask_t, h
     
-    # Take an image and  a background and prepare them to go through the mixture function.
     def generate(self, image, back, pad = 10 ):
         '''generate image
         first resize image to 128 x 128,
         then padding image with 2 * pad of 0s
         randomly select one piece in background
+        :param: image: original image
+        :param: back: background image
+        :returns
+        image_org: original image with mask
+        image_ilu: synthetic image
+        mask: mask for image face and background
+        h: stores the paramters of transformation on images.
         '''
         
         imsize = 128 #256

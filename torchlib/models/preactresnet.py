@@ -133,8 +133,11 @@ def preactresnet152(pretrained=False, **kwargs):
         pass
     return model
 
-# a module that can also serve as an embedding layer for larger networks.
+
 class PreActResEmbNet(nn.Module):
+    """
+    no included in our neural network
+    """
     def __init__(self, block, num_blocks,  dim=64, num_channels=3, initial_channels=64):
         super(PreActResEmbNet, self).__init__()
         self.in_planes=initial_channels
@@ -185,8 +188,11 @@ def preactresembnet152(pretrained=False, **kwargs):
         pass
     return model
 
-# A preActResNet embedding layer that uses expansion for better results.
+
 class PreActResEmbExNet(nn.Module):
+    """
+    PreActResEmbExNet has two outputs, representation and classification label, used for ferattention gmm net
+    """
     def __init__(self, block, num_blocks, dim=64, num_classes=1000, num_channels=3, initial_channels=64):
         super(PreActResEmbExNet, self).__init__()
         self.in_planes = initial_channels
