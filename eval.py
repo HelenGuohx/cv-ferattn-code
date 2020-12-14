@@ -59,7 +59,9 @@ def arg_parser():
 
 
 def main(params=None):
-    
+    # This model has a lot of variabilty, so it needs a lot of parameters.
+    # We use an arg parser to get all the arguments we need.
+    # See above for the default values, definitions and information on the datatypes.
     parser = arg_parser()
     if params:
         args = parser.parse_args(params)
@@ -101,15 +103,13 @@ def main(params=None):
     # experiments
     experiments = [ 
         { 'name': namedataset,        'subset': FactoryDataset.training,   'status': breal },
-        { 'name': namedataset,        'subset': FactoryDataset.validation, 'status': breal },
-        # { 'name': namedataset+'dark', 'subset': FactoryDataset.training,   'real': False },
-        # { 'name': namedataset+'dark', 'subset': FactoryDataset.validation, 'real': False },
+        { 'name': namedataset,        'subset': FactoryDataset.validation, 'status': breal }
         ]
     
     # representation datasets
     if brepresentation: 
     
-        # Load models
+        # create an instance of a model to modify
         print('>> Load model ...')
         network = fnet[fname](
             patchproject=project,
@@ -129,6 +129,7 @@ def main(params=None):
 
 
         size_input = network.size_input
+        # Perform the experiments
         for i, experiment in enumerate(experiments):
             
             name_dataset = experiment['name']
@@ -205,7 +206,8 @@ def main(params=None):
 
         tuplas=[]
         print('|Num\t|Acc\t|Prec\t|Rec\t|F1\t|Set\t|Type\t|Accuracy_type\t')
-        for  i, experiment in enumerate(experiments):   
+        # Perform the experiments
+        for  i, experiment in enumerate(experiments):
 
             name_dataset = experiment['name']
             subset = experiment['subset']
@@ -303,6 +305,7 @@ def main(params=None):
         
         tuplas=[]
         print('|Num\t|Acc\t|Prec\t|Rec\t|F1\t|Type\t')
+        # Perform the experiments
         for  i, experiment in enumerate(experiments):
             name_dataset = experiment['name']            
             real_train   = 'real' if experiment['train'] else 'no_real'
@@ -320,11 +323,6 @@ def main(params=None):
             
 
             clf = KNeighborsClassifier(n_neighbors=11)
-            #clf = GaussianNB()
-            #clf = RandomForestClassifier(n_estimators=150, oob_score=True, random_state=123456)
-            #clf = MLPClassifier(hidden_layer_sizes=(100,100), max_iter=100, alpha=1e-4,
-            #                     solver='sgd', verbose=10, tol=1e-4, random_state=1,
-            #                     learning_rate_init=.01)
 
             clf.fit(Xo,Yo)
 
@@ -373,26 +371,4 @@ def main(params=None):
         
 
 if __name__ == '__main__':
-    PATHDATASET = '~/.datasets/'
-    NAMEDATASET = 'ferp'  # bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
-    NAMEMETHOD = 'attnet'  # attnet, attstnnet, attgmmnet, attgmmstnnet
-    PROJECT = f"../out/{NAMEMETHOD}"
-    # PATHNAMEOUT = '../out/attnet'
-    FILENAME = 'result.txt'
-    PATHMODEL = 'models'
-    NAMEMODEL = 'model_best.pth.tar'  # 'model_best.pth.tar' #'chk000565.pth.tar'
-    BREAL = 'real'
-    EXP_NAME = 'feratt_attnet_ferattention_attloss_adam_ferp_dim32_bbpreactresnet_fold5_000'
-    MODEL = f'{PROJECT}/{EXP_NAME}/{PATHMODEL}/{NAMEMODEL}'
-
-   # / out / attnet / feratt_attnet_ferattention_attloss_adam_ck_dim32_bbpreactresnet_fold0_000 / models/model_best.pth.tar
-    params = f"--project={PROJECT} \
---projectname={EXP_NAME} \
---pathdataset={PATHDATASET} \
---namedataset={NAMEDATASET} \
---filename={FILENAME} \
---breal={BREAL} \
---name-method={NAMEMETHOD} \
---model={MODEL}".split()
-
     main()
