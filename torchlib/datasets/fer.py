@@ -91,96 +91,15 @@ def adjust( image, plm  ):
     
     return image_rot, plm_rot
 
-# Split our data into data to train on and data to validate our model on.
-def split_train_valid(path, filename, test_actor_num):
-    data_dir = os.path.join(path, filename + '.h5')
-    f = h5py.File(data_dir, 'r')
-    data = np.array(f["data"])
-    labels = np.array(f["iclass"])
-    iactor = np.array(f["iactor"]).astype(int)
-    numclass = np.array(f["num"]).item()
-
-    actors = np.unique(iactor)
-    np.random.seed(42)
-    actors = np.random.permutation(actors)
-    test_actors = actors[:test_actor_num]
-
-    test_index = np.zeros(len(labels))
-    for i in test_actors:
-        test_index[iactor == i] = 1
-    train_index = 1 - test_index
-
-    print(f"train size: {sum(train_index)}, test size: {sum(test_index)}")
-
-    print("Save training data into ", os.path.join(path, filename + '_train.h5'))
-    with h5py.File(os.path.join(path, filename + '_train.h5'), 'w') as f:
-        f.create_dataset('data', data=data[train_index == 1])
-        f.create_dataset('iclass', data=labels[train_index == 1])
-        f.create_dataset('num', data=numclass)
-
-    print("Save test data into ", os.path.join(path, filename + '_test.h5'))
-    with h5py.File(os.path.join(path, filename + '_test.h5'), 'w') as f:
-        f.create_dataset('data', data=data[test_index == 1])
-        f.create_dataset('iclass', data=labels[test_index == 1])
-        f.create_dataset('num', data=numclass)
-
-# Load a dataset from a file
-class FERClassicDataset0(dataProvide):
-    """
-    FER CLASSIC dataset
-        CK, JAFFE, BU
-    Args:
-        path
-        filename
-        idenselect
-        transform (callable, optional): Optional transform to be applied on a sample.
-    """
-
-    # classes = ['Neutral - NE', 'Happiness - HA', 'Surprise - SU', 'Sadness - SA', 'Anger - AN', 'Disgust - DI',
-    #            'Fear - FR', 'Contempt - CO']
-    classes = ['NE', 'AN', 'CO', 'DI', 'FR', 'HA', 'SA', 'SU']
-    class_to_idx = {_class: i for i, _class in enumerate(classes)}
-
-    def __init__(self,
-                 path,
-                 filename,
-                 idenselect=[],
-                 train=True,
-                 transform=None,
-                 ):
-
-        if train:
-            filename += '_train.h5'
-        else:
-            filename += '_test.h5'
-
-        f = h5py.File(os.path.join(path, filename), 'r')
-        data = np.array(f["data"])
-        labels = np.array(f["iclass"])
-        numclass = np.array(f["num"]).item()
-
-        self.data = data
-        self.labels = labels
-        self.transform = transform
-        self.numclass = numclass
-
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, i):
-        image = self.data[i]
-        label = self.labels[i]
-        return image, label
-
-# Parse a dataset by emotions, using numbers to one-hot encode.
 class FERClassicDataset( dataProvide ):
     """
     FER CLASSIC dataset
-        CK, JAFFE, BU        
+        CK, JAFFE, BU
+    one-hot encode emotions
     Args:
-        path
-        filename
-        idenselect
+        path: data path
+        filename: file extention must be .h5
+        idenselect: index selected for testing, use Leave-10-subject-out methods to get train and test
         transform (callable, optional): Optional transform to be applied on a sample.   
     """
 
@@ -199,18 +118,24 @@ class FERClassicDataset( dataProvide ):
         if os.path.isdir(path) is not True:
             raise ValueError('Path {} is not directory'.format(path))
 
+        # read data file
         self.path = path
         self.filename = filename
         dir = os.path.join(path, filename + '.h5' )
         f = h5py.File(dir)
 
+        # image vectors
         self.data   = np.array(f["data"])
+        # image dimention
         self.imsize = np.array(f["imsize"])[0,:].astype(int)
-        self.iactor = np.array(f["iactor"]).astype(int) #??
+        # subject number in the image
+        self.iactor = np.array(f["iactor"]).astype(int)
+        # emotion label
         self.labels = np.array(f["iclass"]).astype(int)
+        # total number of data
         self.num = len(f["iclass"])
 
-        # Emotions class 
+        # Emotions class to index/numbers
         if filename == 'ck' or filename == 'ckp':       
             #classes = ['Neutral - NE', 'Anger - AN', 'Contempt - CO', 'Disgust - DI', 'Fear - FR', 'Happiness - HA', 'Sadness - SA', 'Surprise - SU']
             toferp = [0, 4, 7, 5, 6, 1, 3, 2 ]
@@ -220,14 +145,16 @@ class FERClassicDataset( dataProvide ):
         else:
             assert(False)
 
-
+        # parser emotions to numbers
         self.labels = np.array([ toferp[l] for l in self.labels ])
         self.numclass = len(np.unique(self.labels))
 
+        # choose images containing the selected actors
         index = np.ones( (self.num,1) )
         actors = np.unique(self.iactor)
         for i in idenselect:
             index[self.iactor == actors[i]] = 0
+        # choose the train or validation index
         self.indexs = np.where(index == train)[0]        
         self.transform = transform
         
@@ -254,14 +181,10 @@ class FERClassicDataset( dataProvide ):
         return self.iactor[i]
 
     def getladmarks(self):
-        i = self.index
-        return np.squeeze( self.points[i,...]).transpose(1,0)
+        pass
 
     def getroi(self):
-        
-        box = [0,0,48,48]
-        # face_rc = Rect(box)
-        # return face_rc
+        pass
 
 
 # This dataset is not used in our code. This is left here so as to not interfere with import statements elsewhere.
