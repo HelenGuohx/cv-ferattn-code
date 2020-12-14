@@ -70,7 +70,7 @@ do
   fi
 echo "The following iteration had "$alpha' and '$beta' as its parameters.' | tee -a $PROJECT/$EXP_NAME/$EXP_NAME.log
 echo "It is run "${run}" of 5."
-CUDA_VISIBLE_DEVICES=1 python3 ../train.py \
+CUDA_VISIBLE_DEVICES=0 python3 ../train.py \
 $DATA \
 --name-dataset=$NAMEDATASET \
 --databack=$DATABACK \

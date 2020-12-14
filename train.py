@@ -118,7 +118,7 @@ def main():
     # Which network do we want to use? Initialize it.
     fname = args.name_method
     fnet = {
-        'attnet': AttentionNeuralNet,
+        'attnet': AttentionNeuralNet, # network for
         'attgmmnet': AttentionGMMNeuralNet,
         'classnet': ClassNeuralNet,
     }
