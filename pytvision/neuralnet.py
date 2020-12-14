@@ -155,7 +155,7 @@ class NeuralNetAbstract(object):
         print('\nEpoch(Before training): {}/{}(0%)'.format(self.start_epoch, epochs))
         print('-' * 25)
 
-        self.evaluate(val_loader, epoch=self.start_epoch, alpha=alpha, beta=beta)
+        self.evaluate(val_loader, epoch=self.start_epoch)
         for epoch in range(self.start_epoch, epochs):
             epoch += 1
             try:

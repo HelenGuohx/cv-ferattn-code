@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-#TODO: Fusion loss
+# A modified sigmoid loss function
 class Attloss(nn.Module):
     def __init__(self ):
         super(Attloss, self).__init__()
@@ -17,18 +17,18 @@ class Attloss(nn.Module):
         loss_att = torch.clamp(loss_att, max=self.maxvalueloss )
         return 5.0*loss_att
 
+# a modified Mean Standard Error loss function to run on attention maps
 class AttMSEloss(nn.Module):
     def __init__(self ):
         super(AttMSEloss, self).__init__()
 
     def forward(self, x_org, y_mask, att):
         loss_att = ((( (x_org*y_mask[:,1,...].unsqueeze(dim=1)) - att ) ** 2)).mean()
-        # loss_att = ((( x_org - att ) ** 2)).mean()
         loss_att = torch.clamp(loss_att, max=30)
         return 10*loss_att
 
 
-
+# A modified STN loss module
 class STNloss(nn.Module):
 
     def __init__(self ):
@@ -39,11 +39,10 @@ class STNloss(nn.Module):
         grid_est = F.affine_grid(theta, x_org.size())
         x_org_t  = F.grid_sample(x_org, grid_org)
         x_org_te = F.grid_sample(x_org, grid_est)
-        # #loss_theta = ((y_theta - theta) ** 2).mean()
-        # #loss_theta = F.mse_loss( theta.view(-1, 3*2 ) , y_theta.view(-1, 3*2 ) )
         loss_theta = ((x_org_t - x_org_te) ** 2).mean()
         return 10*loss_theta
 
+# A MCE loss class modified to accept weights
 class WeightedMCEloss(nn.Module):
 
     def __init__(self):
@@ -57,10 +56,10 @@ class WeightedMCEloss(nn.Module):
 
         y_pred_log =  F.log_softmax(y_pred, dim=1)
         logpy = torch.sum( weight * y_pred_log * y_true, dim=1 )
-        #loss  = -torch.sum(logpy) / torch.sum(weight)
         loss  = -torch.mean(logpy)
         return loss
 
+# An MCE loss class modified to focus on the center of the image, so as to not get bogged down with the edges
 class WeightedMCEFocalloss(nn.Module):
 
     def __init__(self, gamma=2.0 ):
@@ -84,6 +83,7 @@ class WeightedMCEFocalloss(nn.Module):
 
         return loss
 
+# A class that applies weights to a binary cross entropy loss function.
 class WeightedBCELoss(nn.Module):
 
     def __init__(self ):
@@ -102,6 +102,7 @@ class WeightedBCELoss(nn.Module):
 
         return loss
 
+# A class made to make it easier to access the BCEWithLogitsLoss function. 
 class BCELoss(nn.Module):
 
     def __init__(self):
@@ -114,6 +115,7 @@ class BCELoss(nn.Module):
         loss = self.bce(y_pred, y_true)
         return loss
 
+# A loss function to compare final labels to our output. 
 class WeightedBDiceLoss(nn.Module):
 
     def __init__(self ):
@@ -133,6 +135,7 @@ class WeightedBDiceLoss(nn.Module):
         return loss
 
 
+# A loss function to compare final labels to our output. 
 class BDiceLoss(nn.Module):
 
     def __init__(self):
@@ -152,7 +155,7 @@ class BDiceLoss(nn.Module):
         return 1. - score
 
 
-
+# A loss function to compare final labels to our output, but with a bit lower value to influence our model less. 
 class BLogDiceLoss(nn.Module):
 
     def __init__(self, classe = 1 ):
@@ -174,6 +177,7 @@ class BLogDiceLoss(nn.Module):
 
         return -torch.log(2 * intersection / union)
 
+# A loss class that amalgamates several of the previous classes into one for ease of use.
 class WeightedMCEDiceLoss(nn.Module):
 
     def __init__(self, alpha=1.0, gamma=1.0  ):
@@ -192,6 +196,7 @@ class WeightedMCEDiceLoss(nn.Module):
         loss = loss_mce + alpha*loss_dice
         return loss
 
+# A loss class that amalgamates several of the previous classes into one for ease of use.
 class MCEDiceLoss(nn.Module):
 
     def __init__(self, alpha=1.0, gamma=1.0  ):
@@ -211,6 +216,7 @@ class MCEDiceLoss(nn.Module):
         return loss
 
 
+# A class to calculate the accuracy of our model and return a percent
 class Accuracy(nn.Module):
 
     def __init__(self, bback_ignore=True):
@@ -237,6 +243,7 @@ class Accuracy(nn.Module):
         return accs.mean()
 
 
+# builds a dice loss model. 
 class Dice(nn.Module):
 
     def __init__(self, bback_ignore=True):
@@ -264,13 +271,14 @@ class Dice(nn.Module):
         dices = torch.stack(dices)
         return dices.mean()
 
-
+# A funciton to chop off both sides of an image, leaving us with the center
 def centercrop(image, w, h):
     nt, ct, ht, wt = image.size()
     padw, padh = (wt-w) // 2 ,(ht-h) // 2
     if padw>0 and padh>0: image = image[:,:, padh:-padh, padw:-padw]
     return image
 
+# A function to make an array one dimensional
 def flatten(x):
     x_flat = x.clone()
     x_flat = x_flat.view(x.shape[0], -1)
@@ -294,7 +302,7 @@ def one_hot_embedding(labels, num_classes):
 
 
 # GMM Loss metrics
-
+# This is the loss model described in the paper. It is also where we altered the parameters of the beta distribution. 
 class DGMMLoss(nn.Module):
     r"""DGMMLoss class
     Deep Gaussian Mixture Model in embedded space loss
@@ -306,27 +314,31 @@ class DGMMLoss(nn.Module):
         sigma (float):
         cuda (bool):
         mix (bool): mixup
+        alpha (int): the Alpha parameter of the beta distribution
+        beta (int): the beta parameter of the beta distribution
     """
 
-    def __init__(self, classes=10, sigma=0.5, cuda=False, mix=True, knn=False  ):
+    def __init__(self, classes=10, sigma=0.5, cuda=False, mix=True, knn=False, alpha=2, beta=2):
         super(DGMMLoss, self).__init__()
         self.classes = classes
         self.sigma   = sigma
         self.cuda    = cuda
         self.mix     = mix
         self.knn     = knn
+        self.alpha   = alpha
+        self.beta    = beta
 
 
+    # This allows us to call our loss function as a net, making things easier
     def forward( self, x, y, classes=None ):
 
         if self.mix:
             # regeneration
-            alpha=2.0
             k=3
 
             # when first parameter == second param, beta distribution is gaussian distribution
             # ????
-            lam = torch.distributions.beta.Beta(torch.Tensor([alpha]), torch.Tensor([alpha])).sample()
+            lam = torch.distributions.beta.Beta(torch.Tensor([self.alpha]), torch.Tensor([self.beta])).sample()
             indices = torch.randperm(x.shape[0])
             if self.cuda: lam = lam.cuda()
             x_ul = x * lam.expand_as(x) + x[indices,...] * (1 - lam.expand_as(x))
@@ -371,10 +383,8 @@ class DGMMLoss(nn.Module):
             y_ng = []
             for ix in x:
                 d  = torch.sum((x - ix)**2 ,dim=1).squeeze()
-                #i = torch.argmin(d, dim=0) #1-NN
                 i  = torch.topk(d, k=k+1, dim=0, largest=False )[1] #1-NN
                 yi = torch.mode( y[i[1:]], dim=0)[0]
-                #yi = y[i[1]]
                 y_ng.append( yi )
 
             y_ng = torch.stack(y_ng, dim=0)
@@ -429,7 +439,7 @@ class GMMAccuracy(nn.Module):
 
 
 
-## Baseline clasification
+## Baseline clasification - this is used to store models that are better
 
 class TopkAccuracy(nn.Module):
     """

@@ -450,6 +450,7 @@ class FERAttentionGMMNet(nn.Module):
 
         return z, y, att, g_att, g_ft
 
+
 class FERAttentionSTNNet(nn.Module):
     """FERAttentionSTNNet
     """
