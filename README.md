@@ -3,7 +3,7 @@
 
 ### [Paper](http://openaccess.thecvf.com/content_CVPRW_2019/html/MBCCV/Fernandez_FERAtt_Facial_Expression_Recognition_With_Attention_Net_CVPRW_2019_paper.html) | [arXiv](https://arxiv.org/abs/1810.12121)
 
-Key files we need
+### Key files we need
 ```
 /books
     data_process.ipynb  # process ck+ dataset into h5 file 
@@ -66,6 +66,13 @@ bash eval_ferp.sh <MODEL_PATH>
 #change BREAL to 'synthetic' in train_ferp.sh and eval_ferp.sh
 bash train_ferp.sh
 bash eval_ferp.sh <MODEL_PATH>
+
+
+# tune number of filters
+bash modify_num_filter.sh
+
+# tune beta and alpha
+bash beta_train_ck.sh
 
 ```
   

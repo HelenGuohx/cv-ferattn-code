@@ -5,7 +5,7 @@
       <paths name="haixuanguo@129.123.25.207:22">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/haixuanguo/Documents/code" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/haixuanguo/Documents/ferattn_code_light" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

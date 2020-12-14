@@ -46,6 +46,8 @@ class NeuralNetAbstract(object):
         self.parallel = not no_cuda and parallel
         torch.manual_seed(seed)
         if self.cuda:
+            # gpu = 0
+            print("gpu", gpu)
             torch.cuda.set_device( gpu )
             torch.cuda.manual_seed(seed)
 

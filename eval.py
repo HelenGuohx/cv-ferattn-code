@@ -12,13 +12,10 @@ import torch
 import torch.nn.functional as TF
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
-from torchvision import transforms, utils
 
-from pytvision.transforms.aumentation import  ObjectImageMetadataTransform
-from pytvision.transforms import transforms as mtrans
 
-#sys.path.append('../')
-from torchlib.transforms import functional as F
+sys.path.append('../')
+# from torchlib.transforms import functional as F
 from torchlib.datasets.factory  import FactoryDataset
 from torchlib.datasets.datasets import Dataset
 from torchlib.datasets.fersynthetic  import SyntheticFaceDataset
@@ -99,10 +96,9 @@ def main(params=None):
         { 'name': namedataset,        'subset': FactoryDataset.validation, 'status': breal }
         ]
     
-    # representation datasets
-    if brepresentation: 
+    if brepresentation:
     
-        # create an instance of a model to modify
+        # create an instance of a model
         print('>> Load model ...')
         network = fnet[fname](
             patchproject=project,
@@ -115,13 +111,12 @@ def main(params=None):
 
         cudnn.benchmark = True
 
-        # load model
+        # load trained model
         if network.load( pathnamemodel ) is not True:
             print('>>Error!!! load model')
             assert(False)
 
 
-        size_input = network.size_input
         # Perform the experiments
         for i, experiment in enumerate(experiments):
             
@@ -174,6 +169,8 @@ def main(params=None):
             print("size of data:", len(dataset))
             print("num of batches", len(dataloader))
 
+            # if method is attgmmnet, then the output has representation vector Zs
+            # otherwise, the output only has the predicted emotions, and ground truth
             if name_method == 'attgmmnet':
                 # representation
                 Y_labs, Y_lab_hats, Zs = network.representation(dataloader, breal)
@@ -191,11 +188,9 @@ def main(params=None):
                 reppathname = os.path.join( pathproject, 'rep_{}_{}_{}.pth'.format(namedataset, subset, breal ) )
                 torch.save( { 'Yh':Y_lab_hats, 'Y':Y_labs }, reppathname )
                 print( 'save representation ...', reppathname )
-            
 
-    
+    # if calculate the classification result, accuracy, precision, recall and f1
     if bclassification_test:
-
         tuplas=[]
         print('|Num\t|Acc\t|Prec\t|Rec\t|F1\t|Set\t|Type\t|Accuracy_type\t')
         for  i, experiment in enumerate(experiments):
@@ -229,42 +224,6 @@ def main(params=None):
 
             print(f'save y and yhat to {real}_{subset}_y.npz')
             np.savez(os.path.join(pathproject, f'{real}_{subset}_y.npz'), name1=yhat, name2=y)
-
-            if name_method == 'attgmmnet':
-                y = data_emb['Y']
-                x = data_emb['Z']
-
-                classes = np.unique(y)
-                numclasses = len(classes)
-
-                num = x.shape[0]
-                dim = x.shape[1]
-
-                Xmu = np.zeros((num, numclasses))
-                yh = np.zeros((num,)).astype(int)
-
-                ## Ecuation
-                for idx, c in enumerate(classes):
-                    index = y == int(c)
-                    if index.sum() == 0: continue
-                    xc = x[index, ...]
-                    muc = xc.mean(axis=0)
-                    Xmu[:, idx] = np.sum((x - muc) ** 2, axis=1)
-                    yh[index] = idx
-
-                yhat = np.argmin(Xmu, 1).astype(int)
-
-                acc = metrics.accuracy_score(y, yhat)
-                precision = metrics.precision_score(y, yhat, average='macro')
-                recall = metrics.recall_score(y, yhat, average='macro')
-                f1_score = 2 * precision * recall / (precision + recall)
-
-                print('|{}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{}\t|{}\t|{}\t'.format(
-                    i,
-                    acc, precision, recall, f1_score,
-                    subset, real, 'gmm'
-                ))
-
 
             #|Name|Dataset|Cls|Acc| ...
             tupla = { 

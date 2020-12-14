@@ -6,7 +6,7 @@ import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 
-from torchlib.datasets.fersynthetic  import SecuencialSyntheticFaceDataset, SyntheticFaceDataset
+from torchlib.datasets.fersynthetic  import SyntheticFaceDataset
 from torchlib.datasets.factory import FactoryDataset
 from torchlib.attentionnet import AttentionNeuralNet, AttentionGMMNeuralNet
 from torchlib.classnet import ClassNeuralNet
@@ -205,7 +205,6 @@ def main():
         )
 
         # validate dataset
-        # SyntheticFaceDataset
         val_data = SyntheticFaceDataset(
             data=FactoryDataset.factory(
                 pathname=args.data,
@@ -224,6 +223,7 @@ def main():
         )
 
     num_train = len(train_data)
+    # sample to balance the dataset
     if args.balance:
         labels, counts = np.unique(train_data.labels, return_counts=True)
         weights = 1 / (counts / counts.sum())

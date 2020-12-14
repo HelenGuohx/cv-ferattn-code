@@ -153,7 +153,7 @@ class AttentionNeuralNetAbstract(NeuralNetAbstract):
 
     def _create_model(self, arch, num_output_channels, num_input_channels, pretrained, **kwargs):
         """
-        Create model
+        Create model, private method
             -arch (string): select architecture
             -num_classes (int)
             -num_channels (int)
@@ -324,6 +324,8 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
 
             # measure data loading time
             data_time.update(time.time() - end)
+
+            # real dataset
             if self.breal == 'real':
                 x_img, y_lab = sample['image'], sample['label']
                 y_lab = y_lab.argmax(dim=1)
@@ -335,6 +337,7 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
                 x_org = x_img.clone().detach()
 
             else:
+                # synthetic dataset
                 x_org, x_img, y_mask, meta = sample
 
                 y_lab = meta[:, 0]
@@ -380,7 +383,13 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
 
     # The beta parameters in this line is the result of an earlier refactor, and may safely be ignored.
     def evaluate(self, data_loader, epoch=0, alpha=2, beta=2):
-
+        """
+        evaluate on validation dataset
+        :param data_loader: which data_loader to use
+        :param epoch: current epoch
+        :return:
+            acc: average accuracy on data_loader
+        """
         # reset loader
         self.logger_val.reset()
         batch_time = AverageMeter()
@@ -457,22 +466,16 @@ class AttentionNeuralNet(AttentionNeuralNetAbstract):
             bavg=True,
             bsummary=True,
             )
-
-        #vizual_freq
-        # if epoch % self.view_freq == 0:
-        #
-        #     att   = att[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-        #     srf   = srf[0,:,:,:].permute( 1,2,0 ).sum(dim=2)
-        #     fmap  = fmap[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-        #
-        #     self.visheatmap.show('Image', x_img.data.cpu()[0].numpy()[0,:,:])
-        #     self.visheatmap.show('Image Attention',att.cpu().numpy().astype(np.float32) )
-        #     self.visheatmap.show('Feature Map',srf.cpu().numpy().astype(np.float32) )
-        #     self.visheatmap.show('Attention Map',fmap.cpu().numpy().astype(np.float32) )
-
         return acc
 
     def representation( self, dataloader, breal):
+        """
+        :param dataloader:
+        :param breal: 'real' or 'synthetic'
+        :return:
+            Y_labs: true labels
+            Y_lab_hats: predicted labels
+        """
         Y_labs = []
         Y_lab_hats = []
         self.net.eval()
@@ -784,20 +787,7 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
             bsummary=True,
             )
 
-        #vizual_freq
-        # if epoch % self.view_freq == 0:
-        #
-        #     att   = att[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-        #     srf   = srf[0,:,:,:].permute( 1,2,0 ).sum(dim=2)
-        #     fmap  = fmap[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-        #
-        #     self.visheatmap.show('Image', x_img.data.cpu()[0].numpy()[0,:,:])
-        #     self.visheatmap.show('Image Attention',att.cpu().numpy().astype(np.float32) )
-        #     self.visheatmap.show('Feature Map',srf.cpu().numpy().astype(np.float32) )
-        #     self.visheatmap.show('Attention Map',fmap.cpu().numpy().astype(np.float32) )
-
         return acc
-
 
     def representation( self, dataloader, breal ):
         Y_labs = []
@@ -842,8 +832,11 @@ class AttentionGMMNeuralNet(AttentionNeuralNetAbstract):
 
         # create loss
         if loss == 'attloss':
+            # claasification loss
             self.criterion_bce = nn.CrossEntropyLoss().cuda()
+            # attention loss
             self.criterion_att = nloss.Attloss()
+            # representation loss
             self.criterion_gmm = nloss.DGMMLoss( self.num_classes, cuda=self.cuda, alpha=alpha, beta=beta)
         else:
             assert(False)

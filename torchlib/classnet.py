@@ -21,10 +21,10 @@ from pytvision import netlearningrate
 from pytvision import utils as pytutils
 
 
-# Neural Net for classification network
 class ClassNeuralNet(NeuralNetAbstract):
     """
-    classification Neural Net
+    classification Neural Net like preactresnet
+
     """
 
     def __init__(self,
@@ -166,6 +166,11 @@ class ClassNeuralNet(NeuralNetAbstract):
             )
 
     def load(self, pathnamemodel):
+        """
+        load model from pretrained model
+        :param pathnamemodel: model path
+        :return:
+        """
         bload = False
         if pathnamemodel:
             if os.path.isfile(pathnamemodel):
@@ -199,6 +204,7 @@ class ClassNeuralNet(NeuralNetAbstract):
 
             # measure data loading time
             data_time.update(time.time() - end)
+            # if dataset is real
             if self.breal == 'real':
                 x_img, y_lab = sample['image'], sample['label']
                 y_lab = y_lab.argmax(dim=1)
@@ -210,6 +216,7 @@ class ClassNeuralNet(NeuralNetAbstract):
                 x_org = x_img.clone().detach()
 
             else:
+                # if dataset is synthetic
                 x_org, x_img, y_mask, meta = sample
 
                 y_lab = meta[:, 0]
@@ -225,9 +232,10 @@ class ClassNeuralNet(NeuralNetAbstract):
             # fit (forward)
             y_lab_hat = self.net(x_img)
 
-            # measure accuracy and record loss
+            # calculate classification loss
             loss_bce  = self.criterion_bce( y_lab_hat, y_lab.long() )
             loss      = loss_bce
+            # accuracy of choosing top k predicted classes
             topk      = self.topk( y_lab_hat, y_lab.long() )
 
             batch_size = x_img.shape[0]
@@ -252,7 +260,13 @@ class ClassNeuralNet(NeuralNetAbstract):
                 self.logger_train.logger( epoch, epoch + float(i+1)/len(data_loader), i, len(data_loader), batch_time,   )
 
     def evaluate(self, data_loader, epoch=0):
-
+        """
+        evaluate on validation dataset
+        :param data_loader: which data_loader to use
+        :param epoch: current epoch
+        :return:
+            acc: average accuracy on data_loader
+        """
         # reset loader
         self.logger_val.reset()
         batch_time = AverageMeter()
@@ -308,6 +322,7 @@ class ClassNeuralNet(NeuralNetAbstract):
                     batch_size,
                     )
 
+                # print the result in certain print frequency when iterating batches
                 if i % self.print_freq == 0:
                     self.logger_val.logger(
                         epoch, epoch, i,len(data_loader),
@@ -317,10 +332,11 @@ class ClassNeuralNet(NeuralNetAbstract):
                         bsummary=False,
                         )
 
-        #save validation loss
+        #save validation loss and accuracy
         self.vallosses = self.logger_val.info['loss']['loss'].avg
         acc = self.logger_val.info['metrics']['topk'].avg
 
+        # print the average loss and accuracy after one iteration
         self.logger_val.logger(
             epoch, epoch, i, len(data_loader),
             batch_time,
@@ -329,21 +345,16 @@ class ClassNeuralNet(NeuralNetAbstract):
             bsummary=True,
             )
 
-        #vizual_freq
-        # if epoch % self.view_freq == 0:
-        #
-        #     att   = att[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-        #     srf   = srf[0,:,:,:].permute( 1,2,0 ).sum(dim=2)
-        #     fmap  = fmap[0,:,:,:].permute( 1,2,0 ).mean(dim=2)
-        #
-        #     self.visheatmap.show('Image', x_img.data.cpu()[0].numpy()[0,:,:])
-        #     self.visheatmap.show('Image Attention',att.cpu().numpy().astype(np.float32) )
-        #     self.visheatmap.show('Feature Map',srf.cpu().numpy().astype(np.float32) )
-        #     self.visheatmap.show('Attention Map',fmap.cpu().numpy().astype(np.float32) )
-
         return acc
 
     def representation( self, dataloader, breal='real'):
+        """
+        :param dataloader:
+        :param breal:'real' or 'synthetic'
+        :return:
+            Y_labs: true labels
+            Y_lab_hats: predicted labels
+        """
         Y_labs = []
         Y_lab_hats = []
         self.net.eval()
@@ -369,7 +380,7 @@ class ClassNeuralNet(NeuralNetAbstract):
 
 
     def __call__(self, image ):
-        # switch to evaluate mode
+        # when calling the class, switch to evaluate mode
         self.net.eval()
         with torch.no_grad():
             x = image.cuda() if self.cuda else image
@@ -378,6 +389,8 @@ class ClassNeuralNet(NeuralNetAbstract):
         return y_lab_hat, att, fmap, srf
 
     def _create_loss(self, loss):
+        # private method
+        # create cross entropy loss
         self.criterion_bce = nn.CrossEntropyLoss().cuda()
         self.s_loss = loss
 

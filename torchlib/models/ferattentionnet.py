@@ -17,9 +17,7 @@ from . import stn
 
 __all__ = [
            'FERAttentionNet',       'ferattention',
-           'FERAttentionSTNNet',    'ferattentionstn',
            'FERAttentionGMMNet',    'ferattentiongmm',
-           'FERAttentionGMMSTNNet', 'ferattentiongmmstn'
           ]
 
 
@@ -41,27 +39,12 @@ def ferattentiongmm(pretrained=False, **kwargs):
     return model
 
 
-def ferattentionstn(pretrained=False, **kwargs):
-    """"FERAttentionSTN model architecture
-    """
-    model = FERAttentionSTNNet(**kwargs)
-    if pretrained == True:
-        pass
-    return model
-
-
-
-def ferattentiongmmstn(pretrained=False, **kwargs):
-    """"FERAttentionSTN model architecture
-    """
-    model = FERAttentionGMMSTNNet(**kwargs)
-    if pretrained == True:
-        pass
-    return model
-
-
-
 def normalize_layer(x):
+    """
+    normalize vectors on 3 channels
+    :param x: image vector
+    :return: normalized x
+    """
     x_ch0 = torch.unsqueeze(x[:, 0], 1) * (0.2023 / 0.5) + (0.4914 - 0.5) / 0.5
     x_ch1 = torch.unsqueeze(x[:, 1], 1) * (0.1994 / 0.5) + (0.4822 - 0.5) / 0.5
     x_ch2 = torch.unsqueeze(x[:, 2], 1) * (0.2010 / 0.5) + (0.4465 - 0.5) / 0.5
@@ -69,10 +52,18 @@ def normalize_layer(x):
     return x
 
 def conv3x3(_in, _out):
-    # print("int, out", _in, _out)
+    """
+    a 3 x 3 convoluntional layer
+    :param _in: number of input channels
+    :param _out: number of output channels
+    :return:
+    """
     return nn.Conv2d(_in, _out, kernel_size=3, stride=1, padding=1)
 
 class ConvRelu(nn.Module):
+    """
+    combine convolutional layer and relu function
+    """
     def __init__(self, _in, _out):
         super().__init__()
         self.conv = conv3x3(_in,_out)
@@ -83,6 +74,9 @@ class ConvRelu(nn.Module):
         return x
 
 class ConvRelu2(nn.Module):
+    """
+    two layer of ConvRelu
+    """
     def __init__(self, _in, _out):
         super(ConvRelu2, self).__init__()
         self.cr1 = ConvRelu(_in , _out)
@@ -124,20 +118,6 @@ class DecoderBlockV2(nn.Module):
         x = self.up(x, scale_factor=2 ,mode='bilinear', align_corners=False)
         x = self.cr2( self.cr1(x) )
         return x
-
-class _Residual_Block_DB(nn.Module):
-    def __init__(self, num_ft):
-        super(_Residual_Block_DB, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=num_ft, out_channels=num_ft, kernel_size=3, stride=1, padding=1, bias=True)
-        self.relu  = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(in_channels=num_ft, out_channels=num_ft, kernel_size=3, stride=1, padding=1, bias=True)
-
-    def forward(self, x):
-        identity_data = x
-        output = self.relu(self.conv1(x))
-        output = self.conv2(output)
-        output = torch.add(output, identity_data)
-        return output
 
 class _Residual_Block_SR(nn.Module):
     def __init__(self, num_ft):
@@ -348,16 +328,12 @@ class FERAttentionNet(nn.Module):
         else:
             assert(False)
 
-        # print("att pool shape", att_pool.size())
-
         y = self.netclass( att_pool )
 
         return y, att, g_att, g_ft
 
 
 
-
-# this class is the same as the class above, but with an extra loss function - the Gaussian manifold loss.
 class FERAttentionGMMNet(nn.Module):
     """FERAttentionGMMNet
     """

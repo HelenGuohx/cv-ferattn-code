@@ -17,7 +17,7 @@ class Attloss(nn.Module):
         loss_att = torch.clamp(loss_att, max=self.maxvalueloss )
         return 5.0*loss_att
 
-# a modified Mean Standard Error loss function to run on attention maps
+# a modified Mean Square Error loss function to run on attention maps
 class AttMSEloss(nn.Module):
     def __init__(self ):
         super(AttMSEloss, self).__init__()
@@ -115,7 +115,7 @@ class BCELoss(nn.Module):
         loss = self.bce(y_pred, y_true)
         return loss
 
-# A loss function to compare final labels to our output. 
+# A loss function to compare final labels to our output.
 class WeightedBDiceLoss(nn.Module):
 
     def __init__(self ):
@@ -135,7 +135,7 @@ class WeightedBDiceLoss(nn.Module):
         return loss
 
 
-# A loss function to compare final labels to our output. 
+# A loss function to compare final labels to our output.
 class BDiceLoss(nn.Module):
 
     def __init__(self):
@@ -155,7 +155,7 @@ class BDiceLoss(nn.Module):
         return 1. - score
 
 
-# A loss function to compare final labels to our output, but with a bit lower value to influence our model less. 
+# A loss function to compare final labels to our output, but with a bit lower value to influence our model less.
 class BLogDiceLoss(nn.Module):
 
     def __init__(self, classe = 1 ):
@@ -243,7 +243,7 @@ class Accuracy(nn.Module):
         return accs.mean()
 
 
-# builds a dice loss model. 
+# builds a dice loss model.
 class Dice(nn.Module):
 
     def __init__(self, bback_ignore=True):
