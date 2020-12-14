@@ -22,7 +22,7 @@ __all__ = [
            'FERAttentionGMMSTNNet', 'ferattentiongmmstn'
           ]
 
-
+# The next 35 lines are to deal with pretrained models.
 def ferattention(pretrained=False, **kwargs):
     """"FERAttention model architecture
     """
@@ -60,14 +60,14 @@ def ferattentiongmmstn(pretrained=False, **kwargs):
     return model
 
 
-
+# This function normalizes a layer.
 def normalize_layer(x):
     x_ch0 = torch.unsqueeze(x[:, 0], 1) * (0.2023 / 0.5) + (0.4914 - 0.5) / 0.5
     x_ch1 = torch.unsqueeze(x[:, 1], 1) * (0.1994 / 0.5) + (0.4822 - 0.5) / 0.5
     x_ch2 = torch.unsqueeze(x[:, 2], 1) * (0.2010 / 0.5) + (0.4465 - 0.5) / 0.5
     x = torch.cat((x_ch0, x_ch1, x_ch2), 1)
     return x
-
+# Lines 70 to 172 define simple neural networks that can be used as building blocks for the larger models.
 def conv3x3(_in, _out):
     # print("int, out", _in, _out)
     return nn.Conv2d(_in, _out, kernel_size=3, stride=1, padding=1)
@@ -171,7 +171,7 @@ class BiReLU(torch.autograd.Function):
         grad_x[ torch.abs(x) < alpha ] = 0
         return grad_x
 
-
+# This network will serve as our attention module later. It performs an encoder, decoder operation.
 class AttentionNet(nn.Module):
 
     def __init__(self, in_channels=3, out_channels=1):
@@ -197,7 +197,7 @@ class AttentionNet(nn.Module):
         x = self.final(x)
         return x
 
-
+# This class does the same as the one above it, but it uses ResNet pretrained layers for the encoder.
 class AttentionResNet(nn.Module):
 
     def __init__(self, in_channels=3, out_channels=1, num_filters=32, encoder_depth=34, pretrained=True):
@@ -262,7 +262,7 @@ class AttentionResNet(nn.Module):
         x = self.attention_map( dec1 )
         return x
 
-
+# This network pulls all the above pieces together into one large whole, that our project is on.
 class FERAttentionNet(nn.Module):
     """FERAttentionNet
     """
@@ -309,7 +309,7 @@ class FERAttentionNet(nn.Module):
             assert(False)
 
 
-
+    # This function builds our feature module with however many blocks we want.
     def make_layer(self, block, num_of_layer, num_ft):
         layers = []
         for _ in range(num_of_layer):
@@ -450,7 +450,7 @@ class FERAttentionGMMNet(nn.Module):
 
         return z, y, att, g_att, g_ft
 
-
+# this class also implements STN loss, which was written about and experimented with after the paper we read was written.
 class FERAttentionSTNNet(nn.Module):
     """FERAttentionSTNNet
     """
@@ -543,7 +543,7 @@ class FERAttentionSTNNet(nn.Module):
         y = self.netclass( att_pool )
 
         return y, att, theta, att_t, g_att, g_ft
-
+# This class implements both STN loss and our GMM loss. 
 class FERAttentionGMMSTNNet(nn.Module):
     """FERAttentionGMMSTNNet
     """
