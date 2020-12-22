@@ -1,5 +1,14 @@
+dlib
 scikit-image
 sklearn
 h5py
 pandas
 scikit-fmm
+fastai
+Numpy
+Scipy
+IMutils
+opencv-python
+pandas
+argparse 
+

@@ -3,6 +3,17 @@
 
 ### [Paper](http://openaccess.thecvf.com/content_CVPRW_2019/html/MBCCV/Fernandez_FERAtt_Facial_Expression_Recognition_With_Attention_Net_CVPRW_2019_paper.html) | [arXiv](https://arxiv.org/abs/1810.12121)
 
+This code is based on the [original code](https://github.com/pedrodiamel/ferattention) provided by FERAttention's author. 
+We cleaned the code and remove some unrelated files, and then trained preactresnet, FERAtt + cls, and FERAtt + cls + rep with two datasets, CK+ and FER+
+Our experiment result can be found in ***FinalPresentation.pdf***
+
+
+### Something New
+- Train our model on FER+ dataset
+- Include preactresnet in training model
+- Try different kernel size to get feature attention map
+- Apply the model on real-time facial expression recognition
+ 
 ### Key files we need
 ```
 /books
@@ -34,9 +45,23 @@
 train.py  #create dataset, build neural network, train model
 eval.py   #use the trained model to predict on test data
 ```
+### Prerequisites
 
+- Linux or macOS
+- Python 3
+- NVIDIA GPU + CUDA cuDNN
+- PyTorch
+- virtual environment(virtualenv or conda)
 
-### How to run
+### Installation
+```shell script
+git clone https://github.com/HelenGuohx/cv-ferattn-code.git
+cd ferattn_code_light
+python setup.py install
+pip install -r installation.txt
+```
+
+### How to train and evaluate models
 
 1. Clone the Repo from GitHub
 2. Download the CK+ dataset from kaggle into a directory called ~/.datasets
@@ -50,6 +75,8 @@ One example is
 MODEL_PATH = feratt_attnet_ferattention_attloss_adam_ck_synthetic_filter32_pool_size2_dim32_bbpreactresnet_fold5_000
 ```shell script
 # Train real ck+
+cd runs 
+
 bash train_ck.sh
 bash eval_ck.sh <MODEL_PATH>
 
@@ -75,4 +102,18 @@ bash modify_num_filter.sh
 bash beta_train_ck.sh
 
 ```
-  
+The approximate time to execute the code
+
+
+
+
+### How to apply FERAttn on real-time facial recognition
+```shell script
+cd fervideo
+
+python liveVideoFrameRead.py --fname <fname> --projectname <projectname>
+
+# example
+# python liveVideoFrameRead.py --fname classnet --projectname feratt_classnet_preactresnet18_attloss_adam_ferp_real_filter32_dim32_bbpreactresnet_fold5_000
+
+```  

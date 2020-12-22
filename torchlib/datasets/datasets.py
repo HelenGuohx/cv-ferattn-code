@@ -39,7 +39,7 @@ class Dataset( object ):
         self.data = data
         self.num_channels = num_channels        
         self.transform = transform   
-        self.labels = data.labels
+        self.labels = data.labels if hasattr(data, 'labels') else [0] * len(data)
         self.classes = np.unique(self.labels) 
         self.numclass = len(self.classes)
 

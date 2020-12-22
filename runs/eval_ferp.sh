@@ -2,12 +2,12 @@
 
 PATHDATASET='~/.datasets/'
 NAMEDATASET='ferp' #bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
-NAMEMETHOD='attnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
+NAMEMETHOD='classnet' #attnet, attstnnet, attgmmnet, attgmmstnnet
 PROJECT="../out/$NAMEMETHOD"
 FILENAME='result.txt'
 PATHMODEL='models'
 NAMEMODEL='model_best.pth.tar' #'model_best.pth.tar' #'chk000565.pth.tar'
-BREAL='synthetic' #real, synthetic
+BREAL='real' #real, synthetic
 PROJECTNAME=$1
 MODEL=$PROJECT/$PROJECTNAME/$PATHMODEL/$NAMEMODEL
 ITERATION=5000

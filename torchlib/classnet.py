@@ -67,7 +67,9 @@ class ClassNeuralNet(NeuralNetAbstract):
         num_classes=8,
         backbone='preactresnet',
         num_filters=32,
-        breal='real'
+        breal='real',
+       alpha=2,
+       beta=2,
         ):
         """
         Create
@@ -190,7 +192,7 @@ class ClassNeuralNet(NeuralNetAbstract):
                 print("=> no checkpoint found at '{}'".format(pathnamemodel))
         return bload
 
-    def training(self, data_loader, epoch=0):
+    def training(self, data_loader, epoch=0, *args):
         #reset logger
         self.logger_train.reset()
         data_time  = AverageMeter()
@@ -259,7 +261,7 @@ class ClassNeuralNet(NeuralNetAbstract):
             if i % self.print_freq == 0:
                 self.logger_train.logger( epoch, epoch + float(i+1)/len(data_loader), i, len(data_loader), batch_time,   )
 
-    def evaluate(self, data_loader, epoch=0):
+    def evaluate(self, data_loader, epoch=0, *args):
         """
         evaluate on validation dataset
         :param data_loader: which data_loader to use
@@ -388,7 +390,7 @@ class ClassNeuralNet(NeuralNetAbstract):
             y_lab_hat = F.softmax( y_lab_hat, dim=1 )
         return y_lab_hat, att, fmap, srf
 
-    def _create_loss(self, loss):
+    def _create_loss(self, loss, alpha=None, beta=None):
         # private method
         # create cross entropy loss
         self.criterion_bce = nn.CrossEntropyLoss().cuda()

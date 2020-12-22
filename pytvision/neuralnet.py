@@ -170,7 +170,9 @@ class NeuralNetAbstract(object):
                 self.adjust_learning_rate(epoch)     
                 self.training(train_loader, epoch)
 
-                prec = self.evaluate(val_loader, epoch, alpha=alpha, beta=beta)
+                # prec = self.evaluate(val_loader, epoch, alpha=alpha, beta=beta)
+                prec = self.evaluate(val_loader, epoch)
+
 
                 # remember best prec@1 and save checkpoint
                 is_best = prec > best_prec

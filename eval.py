@@ -214,13 +214,17 @@ def main(params=None):
             precision = metrics.precision_score(y, yhat, average='macro')
             recall = metrics.recall_score(y, yhat, average='macro')
             f1_score = 2*precision*recall/(precision+recall)
-
             
             print( '|{}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{:0.3f}\t|{}\t|{}\t|{}\t'.format(
                 i, 
                 acc, precision, recall, f1_score,
                 subset, real, 'topk'
             ))
+
+            cm = metrics.confusion_matrix(y, yhat)
+            # label = ['Neutral', 'Happiness', 'Surprise', 'Sadness', 'Anger', 'Disgust', 'Fear', 'Contempt']
+            # cm_display = metrics.ConfusionMatrixDisplay(cm, display_labels=label).plot()
+            print(cm)
 
             print(f'save y and yhat to {real}_{subset}_y.npz')
             np.savez(os.path.join(pathproject, f'{real}_{subset}_y.npz'), name1=yhat, name2=y)
@@ -245,4 +249,25 @@ def main(params=None):
         
 
 if __name__ == '__main__':
+    PATHDATASET = '~/.datasets/'
+    NAMEDATASET = 'ck'  # bu3dfe, ferblack, ck, affectnetdark, affectnet, ferp
+    NAMEMETHOD = 'attnet'  # attnet, attstnnet, attgmmnet, attgmmstnnet
+    PROJECT = f"../out/{NAMEMETHOD}"
+    # PATHNAMEOUT = '../out/attnet'
+    FILENAME = 'result.txt'
+    PATHMODEL = 'models'
+    NAMEMODEL = 'model_best.pth.tar'  # 'model_best.pth.tar' #'chk000565.pth.tar'
+    BREAL = 'real'
+    EXP_NAME = 'feratt_attnet_ferattention_attloss_adam_ferp_dim32_bbpreactresnet_fold5_000'
+    MODEL = f'{PROJECT}/{EXP_NAME}/{PATHMODEL}/{NAMEMODEL}'
+
+    # / out / attnet / feratt_attnet_ferattention_attloss_adam_ck_dim32_bbpreactresnet_fold0_000 / models/model_best.pth.tar
+    params = f"--project={PROJECT} \
+    --projectname={EXP_NAME} \
+    --pathdataset={PATHDATASET} \
+    --namedataset={NAMEDATASET} \
+    --filename={FILENAME} \
+    --breal={BREAL} \
+    --name-method={NAMEMETHOD} \
+    --model={MODEL}".split()
     main()
