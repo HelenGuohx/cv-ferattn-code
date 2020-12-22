@@ -111,6 +111,9 @@ The approximate time to execute the code
 ```shell script
 cd fervideo
 
+# download haarcascade_frontalface_default.xml from 
+# https://github.com/opencv/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml
+
 python liveVideoFrameRead.py --fname <fname> --projectname <projectname>
 
 # example
